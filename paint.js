@@ -65,7 +65,7 @@ function init(container, width, height) {
 		this.closePath()
 		this.stroke();
 	};
-	
+
 	ctx.clear = function() {
 		ctx.fillStyle = "#ddd";
 		ctx.fillRect(0, 0, width, height);
@@ -85,21 +85,21 @@ function init(container, width, height) {
 		}
 	};
 
-	canvas.node.onmousedown = function(e) { 
+	canvas.node.onmousedown = function(e) {
 		oldX = e.pageX - this.offsetLeft;
 		oldY = e.pageY - this.offsetTop;
 		canvas.isDrawing = true;
 	};
-	
+
 	canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
-	
-	resetButton.node.onclick = function(e) { 
-		ws.send('RESET:'); 
+
+	resetButton.node.onclick = function(e) {
+		ws.send('RESET:');
 		$(resetButton.node).blur();
 	};
-	
+
 	inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; };
-	
+
 	inputBox.node.onkeypress = function(e) {
 		if (e.keyCode == 13){
 			sendText();
@@ -109,18 +109,23 @@ function init(container, width, height) {
 	/**************************************************************************
 	* WebSocket event handlers
 	**************************************************************************/
-	//ws = new WebSocket("ws://localhost:15013/");
+	// ws = new WebSocket("ws://localhost:15013/");
+	ws = new WebSocket("ws://localhost:9000");
 	//ws = new WebSocket("ws://colab-sbx-250.oit.duke.edu:15013/");
-        ws = new WebSocket("ws://152.3.52.26:15013");
-	
-	ws.onopen = function() { 
+    // ws = new WebSocket("ws://152.3.52.26:15013");
+
+	ws.onopen = function() {
+		// old
 		username = window.prompt("Enter your username");
 		ws.send('USERNAME:' + username);
+
+		// new
+		// ws.send('USERNAME:' + 'kevin');
 	};
-	
+
 	ws.onclose = function() { alert('server shut down'); };
-	
-	// possible message headers: 
+
+	// possible message headers:
 	// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
 	ws.onmessage = function(e) {
 		var params = e.data.split(':');
@@ -147,7 +152,7 @@ function init(container, width, height) {
 		else if (header == 'RESET'){ ctx.clear(); }
 		else if (header == 'ACCEPTED'){
 			document.title = username + ' - Paint Chat';
-			ws.send('GETPAINTBUFFER:');	
+			ws.send('GETPAINTBUFFER:');
 		}
 		else if (header == 'DENIED'){
 			var reason = params[1];
