@@ -1,0 +1,117 @@
+
+.topleft {
+	position: fixed;
+	top: 20px;
+	left: 20px;
+}
+
+#reset {
+	background-color: #ccc;
+	-moz-border-radius: 10px;
+	-webkit-border-radius: 10px;
+	border-radius:6px;
+	color: #fff;
+	font-family: 'Helvetica';
+	font-size: 20px;
+	text-decoration: none;
+	cursor: poiner;
+	border:none; 
+	height:50px; 
+	width:100px;
+	top: 25%;
+	float: left; 
+}
+
+#reset:hover {
+	border: none;
+	background: red;
+	box-shadow: 0px 0px 1px #777; 
+}
+
+#buttonSpace{
+	width: 100px;
+	text-align: center;
+	margin-left: -15px;
+	margin-top: -10px;
+}
+
+#canvasSpace{
+	width:500px;
+	margin-bottom:1em;
+}
+
+#canvas{
+	float: left;
+}
+
+#chatSpace, #messagesSpace, #textEntrySpace{
+	width: 250px; 
+	border-radius: 25px;
+}
+
+#chatSpace, #userlistSpace, #paletteSpace{
+	height: 490px;
+	float: left;
+}
+
+#messagesSpace{
+	background: #dddddd;
+	height: 400px;
+	border: 2px solid #a1a1a1;
+	padding-left: 5px;
+	overflow-y: scroll;
+	overflow-x: wrap;
+	word-wrap: break-word; 
+}
+
+#textEntrySpace{
+	background: #dddddd;
+	height: 90px;
+	border: 2px solid #a1a1a1;
+	position: relative;
+}
+
+#userlistSpace{
+	background: #dddddd;
+	width: 100px;
+	border-radius: 25px;
+	border: 2px solid #a1a1a1;
+	text-align:center;
+}
+
+#paletteSpace, #canvasSpace, #chatSpace{
+	margin-right:1em;
+	float: left;
+}
+
+#inputBox{
+	position: relative;
+	top:10px;
+	resize: none;
+	background-color: transparent;
+	border: 0;
+	outline: none;
+	outline-offset: 0;
+	text-align:center;
+}
+
+#paletteSpace{
+	width: 60px;
+	margin-left: 1em;
+}
+
+.colorSpace{
+	height: 40px;
+	width: 40px;
+	border-radius: 25px;
+	border: 2px solid #a1a1a1;
+	margin-bottom: 2em;
+}
+
+.brushSpace{
+	border: 2px solid #a1a1a1;
+	float: left;
+	margin-top: 1.5em;
+	margin-right: 1em;
+	margin-left: 3em;
+}
