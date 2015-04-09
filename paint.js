@@ -109,8 +109,9 @@ function init(container, width, height) {
 	/**************************************************************************
 	* WebSocket event handlers
 	**************************************************************************/
-
-	ws = new WebSocket("ws://localhost:15013/");
+	//ws = new WebSocket("ws://localhost:15013/");
+	//ws = new WebSocket("ws://colab-sbx-250.oit.duke.edu:15013/");
+        ws = new WebSocket("ws://152.3.52.26:15013");
 	
 	ws.onopen = function() { 
 		username = window.prompt("Enter your username");

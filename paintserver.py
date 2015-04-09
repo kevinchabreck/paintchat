@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 ##############################################################################
 #
 # @program: 	paintserver.py
@@ -8,7 +6,7 @@
 ##############################################################################
 
 from twisted.internet import reactor
-from autobahn.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
+from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 import json
 
 clicks = 0;
