@@ -110,75 +110,94 @@ function init(container, width, height) {
 	* WebSocket event handlers
 	**************************************************************************/
 	// ws = new WebSocket("ws://localhost:15013/");
-	ws = new WebSocket("ws://localhost:9000");
-	//ws = new WebSocket("ws://colab-sbx-250.oit.duke.edu:15013/");
+	// ws = new WebSocket("ws://localhost:9000");
+	// ws = new WebSocket("ws://colab-sbx-250.oit.duke.edu:15013/");
     // ws = new WebSocket("ws://152.3.52.26:15013");
+    var ws = null;
+    var wsuri;
+    if (window.location.protocol === "file:") {
+       wsuri = "ws://localhost:9000";
+    } else {
+       wsuri = "ws://" + window.location.hostname + ":9000";
+    }
+    alert("wsuri: " + wsuri)
+    if ("WebSocket" in window) {
+       ws = new WebSocket(wsuri);
+    } else if ("MozWebSocket" in window) {
+       ws = new MozWebSocket(wsuri);
+    } else {
+       alert("Browser does not support WebSocket!");
+       window.location = "http://autobahn.ws/unsupportedbrowser";
+    }
 
-	ws.onopen = function() {
-		// old
-		username = window.prompt("Enter your username");
-		ws.send('USERNAME:' + username);
+    if(ws){
 
-		// new
-		// ws.send('USERNAME:' + 'kevin');
-	};
-
-	ws.onclose = function() { alert('server shut down'); };
-
-	// possible message headers:
-	// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
-	ws.onmessage = function(e) {
-		var params = e.data.split(':');
-		var header = params[0];
-		if (header == 'PAINT'){
-			arr = params[1].split(' ');
-			params = arr.splice(0,5);
-			params.push(arr.join(' '));
-			ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
-		}
-		else if((header == 'CHAT')||(header == 'INFO')){
-			var msg = e.data.replace(header+':','');
-			if (header == 'INFO'){
-				msg = '<i>'+msg+'</i>';
-			}
-			else if (header == 'CHAT'){
-				msg = '<b>' + msg.replace(':','</b>:');
-			}
-			var messageSpace = document.getElementById("messagesSpace");
-			messageSpace.innerHTML += msg + '</br></br>';
-			messageSpace.scrollTop = messageSpace.scrollHeight;
-			messageSpace.focus();
-		}
-		else if (header == 'RESET'){ ctx.clear(); }
-		else if (header == 'ACCEPTED'){
-			document.title = username + ' - Paint Chat';
-			ws.send('GETPAINTBUFFER:');
-		}
-		else if (header == 'DENIED'){
-			var reason = params[1];
-			username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
+		ws.onopen = function() {
+			// old
+			username = window.prompt("Enter your username");
 			ws.send('USERNAME:' + username);
-		}
-		else if (header == 'PAINTBUFFER'){
-			var paintbuffer = JSON.parse(params[1]);
-			for(var i in paintbuffer){
-				arr = paintbuffer[i].split(' ');
+
+			// new
+			// ws.send('USERNAME:' + 'kevin');
+		};
+
+		ws.onclose = function() { alert('server shut down'); };
+
+		// possible message headers:
+		// CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
+		ws.onmessage = function(e) {
+			var params = e.data.split(':');
+			var header = params[0];
+			if (header == 'PAINT'){
+				arr = params[1].split(' ');
 				params = arr.splice(0,5);
 				params.push(arr.join(' '));
 				ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
 			}
-		}
-		else if (header == 'USERS'){
-			var userlist = JSON.parse(params[1]);
-			var userlistSpace = document.getElementById("userlistSpace");
-			ul = '</br><b>USERS</b></br>';
-			ul += '<i>'+userlist.length+' user(s) online</i><hr>';
-			for(var i in userlist){
-				ul += userlist[i] + '</br>';
+			else if((header == 'CHAT')||(header == 'INFO')){
+				var msg = e.data.replace(header+':','');
+				if (header == 'INFO'){
+					msg = '<i>'+msg+'</i>';
+				}
+				else if (header == 'CHAT'){
+					msg = '<b>' + msg.replace(':','</b>:');
+				}
+				var messageSpace = document.getElementById("messagesSpace");
+				messageSpace.innerHTML += msg + '</br></br>';
+				messageSpace.scrollTop = messageSpace.scrollHeight;
+				messageSpace.focus();
 			}
-			userlistSpace.innerHTML = ul;
-		}
-	};
+			else if (header == 'RESET'){ ctx.clear(); }
+			else if (header == 'ACCEPTED'){
+				document.title = username + ' - Paint Chat';
+				ws.send('GETPAINTBUFFER:');
+			}
+			else if (header == 'DENIED'){
+				var reason = params[1];
+				username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
+				ws.send('USERNAME:' + username);
+			}
+			else if (header == 'PAINTBUFFER'){
+				var paintbuffer = JSON.parse(params[1]);
+				for(var i in paintbuffer){
+					arr = paintbuffer[i].split(' ');
+					params = arr.splice(0,5);
+					params.push(arr.join(' '));
+					ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
+				}
+			}
+			else if (header == 'USERS'){
+				var userlist = JSON.parse(params[1]);
+				var userlistSpace = document.getElementById("userlistSpace");
+				ul = '</br><b>USERS</b></br>';
+				ul += '<i>'+userlist.length+' user(s) online</i><hr>';
+				for(var i in userlist){
+					ul += userlist[i] + '</br>';
+				}
+				userlistSpace.innerHTML = ul;
+			}
+		};
+	}
 
 	/**************************************************************************
 	* jQuery animation functions
