@@ -120,7 +120,7 @@ function init(container, width, height) {
     } else {
        wsuri = "ws://" + window.location.hostname + ":9000";
     }
-    alert("wsuri: " + wsuri)
+    // alert("wsuri: " + wsuri)
     if ("WebSocket" in window) {
        ws = new WebSocket(wsuri);
     } else if ("MozWebSocket" in window) {
