@@ -113,14 +113,16 @@ function init(container, width, height) {
 	// ws = new WebSocket("ws://localhost:9000");
 	// ws = new WebSocket("ws://colab-sbx-250.oit.duke.edu:15013/");
     // ws = new WebSocket("ws://152.3.52.26:15013");
-    var ws = null;
+
+    // determine websocket URI
     var wsuri;
     if (window.location.protocol === "file:") {
        wsuri = "ws://localhost:9000";
     } else {
        wsuri = "ws://" + window.location.hostname + ":9000";
     }
-    // alert("wsuri: " + wsuri)
+    // open websocket
+    var ws = null;
     if ("WebSocket" in window) {
        ws = new WebSocket(wsuri);
     } else if ("MozWebSocket" in window) {
@@ -133,12 +135,8 @@ function init(container, width, height) {
     if(ws){
 
 		ws.onopen = function() {
-			// old
 			username = window.prompt("Enter your username");
 			ws.send('USERNAME:' + username);
-
-			// new
-			// ws.send('USERNAME:' + 'kevin');
 		};
 
 		ws.onclose = function() { alert('server shut down'); };
