@@ -7,7 +7,6 @@
 
 from twisted.internet import reactor
 from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
-# from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol
 import json
 
 clicks = 0;
@@ -18,12 +17,6 @@ clicks = 0;
 #				the PaintFactory class
 # @extends:     WebSocketServerProtocol
 class PaintProtocol(WebSocketServerProtocol):
-
-    # def onConnect(self, request):
-    #     print("Client connecting: {0}".format(request.peer))
-
-    # def onClose(self, wasClean, code, reason):
-    #     print("WebSocket connection closed: {0}".format(reason))
 
 	# @function: 	onOpen
 	# @description:	handles the event of establishing a new connection
@@ -70,10 +63,8 @@ class PaintFactory(WebSocketServerFactory):
 	# @description: constructor function - initializes the global
 	#				client/connection/buffer structures
 	# @param:		url - the URL address to listen for connections/messages on
-
-	def __init__(self, url): #old
-	# 	WebSocketServerFactory.__init__(self, url) #old
-		WebSocketServerFactory.__init__(self, url, debug=False, debugCodePaths=False)
+	def __init__(self, url):
+		WebSocketServerFactory.__init__(self, url)
 		self.CONNECTIONS = []
 		self.CLIENTS = {}
 		self.PAINTBUFFER = []
@@ -82,11 +73,7 @@ class PaintFactory(WebSocketServerFactory):
 	# @description: adds client to list of connection
 	# @param:		client - the cient to add to the connections list
 	def registerConnection(self, client):
-		print "trying to register connection"
-		# if not client in self.CONNECTIONS:
 		if client not in self.CONNECTIONS:
-			print "registering connection!"
-			# print "registered connection " + client.peerstr
 			print "registered connection " + client.peer
 			self.CONNECTIONS.append(client)
 		else:
@@ -96,8 +83,7 @@ class PaintFactory(WebSocketServerFactory):
 	# @description: adds client to list of connection
 	# @param:		client - the cient to add to the client dictionary
 	def registerClient(self, client, username):
-		print "trying to register client", client
-		if not client in self.CLIENTS.keys():
+		if client not in self.CLIENTS:
 			self.CLIENTS[client] = username
 			print "registered client " + username
 			msg = 'INFO:{} has joined the chat'.format(username)
@@ -112,7 +98,7 @@ class PaintFactory(WebSocketServerFactory):
 		if client in self.CONNECTIONS:
 			self.CONNECTIONS.remove(client)
 			print "unregistered CONNECTION " + client.peer
-		if client in self.CLIENTS.keys():
+		if client in self.CLIENTS:
 			user = self.CLIENTS[client]
 			del self.CLIENTS[client]
 			print "unregistered CLIENT " + user
@@ -173,21 +159,10 @@ class PaintFactory(WebSocketServerFactory):
 if __name__ == '__main__':
 	print 'server is running'
 	# define a factory
-	# factory = PaintFactory("ws://localhost:15013")
 	factory = PaintFactory("ws://localhost:9000")
 	# assign it a protocol
 	factory.protocol = PaintProtocol
 	# start listening
-
-	# old
-	# listenWS(factory)
-	# reactor.run()
-
-	# new1
-	# reactor.listenTCP(15013, factory)
-	# reactor.run()
-
-	# new2
 	factory.setProtocolOptions(allowHixie76=True)
 	listenWS(factory)
 	reactor.run()
