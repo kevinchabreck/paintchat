@@ -75,7 +75,7 @@ function init(container, width, height) {
     * Canvas, chat box, and reset button event handlers
     **************************************************************************/
 
-    canvas.node.onmousemove = function(e) {
+    function move(e) {
         if(canvas.isDrawing){
             var newX = e.pageX - this.offsetLeft;
             var newY = e.pageY - this.offsetTop;
@@ -83,15 +83,45 @@ function init(container, width, height) {
             oldX = newX;
             oldY = newY;
         }
-    };
+    }
 
-    canvas.node.onmousedown = function(e) {
+    function start(e) {
         oldX = e.pageX - this.offsetLeft;
         oldY = e.pageY - this.offsetTop;
         canvas.isDrawing = true;
-    };
+    }
 
-    canvas.node.onmouseup = function(e) { canvas.isDrawing = false; };
+    function stop(e) {
+        canvas.isDrawing = false;
+    }
+
+    canvas.node.onmousemove = move
+    canvas.node.onmousedown = start
+    canvas.node.onmouseup = stop
+
+    canvas.node.ontouchmove = move
+    canvas.node.ontouchstart = start
+    canvas.node.ontouchend = stop
+
+    // canvas.node.onmousemove = function(e) {
+        // if(canvas.isDrawing){
+        //     var newX = e.pageX - this.offsetLeft;
+        //     var newY = e.pageY - this.offsetTop;
+        //     ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
+        //     oldX = newX;
+        //     oldY = newY;
+        // }
+    // };
+
+    // canvas.node.onmousedown = function(e) {
+        // oldX = e.pageX - this.offsetLeft;
+        // oldY = e.pageY - this.offsetTop;
+        // canvas.isDrawing = true;
+    // };
+
+    // canvas.node.onmouseup = function(e) {
+        // canvas.isDrawing = false;
+    // };
 
     resetButton.node.onclick = function(e) {
         ws.send('RESET:');
