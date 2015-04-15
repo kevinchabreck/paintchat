@@ -77,6 +77,7 @@ function init(container, width, height) {
 
     function move(e) {
         if(canvas.isDrawing){
+            e.preventDefault();
             var newX = e.pageX - this.offsetLeft;
             var newY = e.pageY - this.offsetTop;
             ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
@@ -86,6 +87,7 @@ function init(container, width, height) {
     }
 
     function start(e) {
+        e.preventDefault();
         oldX = e.pageX - this.offsetLeft;
         oldY = e.pageY - this.offsetTop;
         canvas.isDrawing = true;
@@ -103,32 +105,14 @@ function init(container, width, height) {
     canvas.node.ontouchstart = start
     canvas.node.ontouchend = stop
 
-    // canvas.node.onmousemove = function(e) {
-        // if(canvas.isDrawing){
-        //     var newX = e.pageX - this.offsetLeft;
-        //     var newY = e.pageY - this.offsetTop;
-        //     ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
-        //     oldX = newX;
-        //     oldY = newY;
-        // }
-    // };
-
-    // canvas.node.onmousedown = function(e) {
-        // oldX = e.pageX - this.offsetLeft;
-        // oldY = e.pageY - this.offsetTop;
-        // canvas.isDrawing = true;
-    // };
-
-    // canvas.node.onmouseup = function(e) {
-        // canvas.isDrawing = false;
-    // };
-
     resetButton.node.onclick = function(e) {
         ws.send('RESET:');
         $(resetButton.node).blur();
     };
 
-    inputBox.node.onclick = function(e){ inputBox.node.placeholder = ''; };
+    inputBox.node.onclick = function(e){
+        inputBox.node.placeholder = '';
+    };
 
     inputBox.node.onkeypress = function(e) {
         if (e.keyCode == 13){
@@ -139,6 +123,75 @@ function init(container, width, height) {
     /**************************************************************************
     * WebSocket event handlers
     **************************************************************************/
+
+    // functions for handling different headers
+    // possible message headers:
+    // PAINT, CHAT, INFO, RESET, ACCEPTED, DENIED, PAINTBUFFER, USERS
+
+    function paint(e) {
+        var params = e.data.split(':');
+        var arr = params[1].split(' ');
+        params = arr.splice(0,5);
+        params.push(arr.join(' '));
+        ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
+    }
+
+    function chat(e) {
+        var msg = e.data.replace('CHAT:','');
+        msg = '<b>' + msg.replace(':','</b>:');
+        var messageSpace = document.getElementById("messagesSpace");
+        messageSpace.innerHTML += msg + '</br></br>';
+        messageSpace.scrollTop = messageSpace.scrollHeight;
+        messageSpace.focus();
+    }
+
+    function info(e) {
+        var msg = e.data.replace('INFO:','');
+        msg = '<i>'+msg+'</i>';
+        var messageSpace = document.getElementById("messagesSpace");
+        messageSpace.innerHTML += msg + '</br></br>';
+        messageSpace.scrollTop = messageSpace.scrollHeight;
+        messageSpace.focus();
+    }
+
+    function reset(e) {
+        ctx.clear();
+    }
+
+    function accepted(e) {
+        document.title = username + ' - Paint Chat';
+        ws.send('GETPAINTBUFFER:');
+    }
+
+    function denied(e) {
+        var reason = e.data.replace('DENIED:','');
+        username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
+        ws.send('USERNAME:' + username);
+    }
+
+    function paintbuffer(e) {
+        var params = e.data.split(':');
+        var paintbuffer = JSON.parse(params[1]);
+        for(var i in paintbuffer){
+            arr = paintbuffer[i].split(' ');
+            params = arr.splice(0,5);
+            params.push(arr.join(' '));
+            ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
+        }
+    }
+
+    function users(e) {
+        var params = e.data.split(':');
+        var userlist = JSON.parse(params[1]);
+        var userlistSpace = document.getElementById("userlistSpace");
+        ul = '</br><b>USERS</b></br>';
+        ul += '<i>'+userlist.length+' user(s) online</i><hr>';
+        for(var i in userlist){
+            ul += userlist[i] + '</br>';
+        }
+        userlistSpace.innerHTML = ul;
+    }
+
     // determine websocket URI
     var wsuri;
     if (window.location.protocol === "file:") {
@@ -146,6 +199,7 @@ function init(container, width, height) {
     } else {
        wsuri = "ws://" + window.location.hostname + ":9000";
     }
+
     // open websocket
     var ws = null;
     if ("WebSocket" in window) {
@@ -158,67 +212,30 @@ function init(container, width, height) {
     }
 
     if(ws){
-
         ws.onopen = function() {
             username = window.prompt("Enter your username");
             ws.send('USERNAME:' + username);
         };
 
-        ws.onclose = function() { alert('server shut down'); };
+        ws.onclose = function() {
+            alert('server shut down');
+        };
 
-        // possible message headers:
-        // CHAT, PAINT, RESET, ACCEPTED, DENIED, INFO, PAINTBUFFER, USERS
+        var handlers = {
+            'PAINT' : paint,
+            'CHAT' : chat,
+            'INFO' : info,
+            'RESET' : reset,
+            'ACCEPTED' : accepted,
+            'DENIED' : denied,
+            'PAINTBUFFER' : paintbuffer,
+            'USERS' : users
+        }
+
         ws.onmessage = function(e) {
             var params = e.data.split(':');
             var header = params[0];
-            if (header == 'PAINT'){
-                arr = params[1].split(' ');
-                params = arr.splice(0,5);
-                params.push(arr.join(' '));
-                ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
-            }
-            else if((header == 'CHAT')||(header == 'INFO')){
-                var msg = e.data.replace(header+':','');
-                if (header == 'INFO'){
-                    msg = '<i>'+msg+'</i>';
-                }
-                else if (header == 'CHAT'){
-                    msg = '<b>' + msg.replace(':','</b>:');
-                }
-                var messageSpace = document.getElementById("messagesSpace");
-                messageSpace.innerHTML += msg + '</br></br>';
-                messageSpace.scrollTop = messageSpace.scrollHeight;
-                messageSpace.focus();
-            }
-            else if (header == 'RESET'){ ctx.clear(); }
-            else if (header == 'ACCEPTED'){
-                document.title = username + ' - Paint Chat';
-                ws.send('GETPAINTBUFFER:');
-            }
-            else if (header == 'DENIED'){
-                var reason = params[1];
-                username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
-                ws.send('USERNAME:' + username);
-            }
-            else if (header == 'PAINTBUFFER'){
-                var paintbuffer = JSON.parse(params[1]);
-                for(var i in paintbuffer){
-                    arr = paintbuffer[i].split(' ');
-                    params = arr.splice(0,5);
-                    params.push(arr.join(' '));
-                    ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
-                }
-            }
-            else if (header == 'USERS'){
-                var userlist = JSON.parse(params[1]);
-                var userlistSpace = document.getElementById("userlistSpace");
-                ul = '</br><b>USERS</b></br>';
-                ul += '<i>'+userlist.length+' user(s) online</i><hr>';
-                for(var i in userlist){
-                    ul += userlist[i] + '</br>';
-                }
-                userlistSpace.innerHTML = ul;
-            }
+            handlers[header](e);
         };
     }
 
