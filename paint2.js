@@ -7,34 +7,37 @@ function createCanvas(parent, width, height){
     canvas.node = document.createElement('canvas');
     canvas.node.id = 'canvas';
     canvas.context = canvas.node.getContext('2d');
-    canvas.node.width = 500;
-    canvas.node.height = 500;
+    // 16 x 9 canvas
+    // canvas.node.width = 700;
+    // canvas.node.height = 394;
+    canvas.node.width = width;
+    canvas.node.height = height;
     $(parent).prepend(canvas.node);
     return canvas;
 }
 
-function createResetButton(parent){
-    var button = {};
-    button.node = document.createElement('input');
-    button.node.type = 'submit';
-    button.node.id = 'reset';
-    button.node.value = "Reset!";
-    parent.appendChild(button.node);
-    return button;
-}
+// function createResetButton(parent){
+//     var button = {};
+//     button.node = document.createElement('input');
+//     button.node.type = 'submit';
+//     button.node.id = 'reset';
+//     button.node.value = "Reset!";
+//     parent.appendChild(button.node);
+//     return button;
+// }
 
-function createInputBox(parent){
-    var textBox = {};
-    textBox.node = document.createElement('textarea');
-    textBox.node.rows = 5;
-    textBox.node.cols = 32;
-    textBox.node.maxlength = 100;
-    textBox.node.placeholder = 'say something!';
-    wrap = "hard";
-    textBox.node.id = 'inputBox';
-    parent.appendChild(textBox.node);
-    return textBox;
-}
+// function createInputBox(parent){
+//     var textBox = {};
+//     textBox.node = document.createElement('textarea');
+//     textBox.node.rows = 5;
+//     textBox.node.cols = 32;
+//     textBox.node.maxlength = 100;
+//     textBox.node.placeholder = 'say something!';
+//     wrap = "hard";
+//     textBox.node.id = 'inputBox';
+//     parent.appendChild(textBox.node);
+//     return textBox;
+// }
 
 function init(container, width, height) {
 
@@ -44,8 +47,8 @@ function init(container, width, height) {
 
     var canvas = createCanvas(container, width, height);
     var ctx = canvas.context;
-    var resetButton = createResetButton(document.getElementById('buttonSpace'));
-    var inputBox = createInputBox(document.getElementById('textEntrySpace'));
+    // var resetButton = createResetButton(document.getElementById('buttonSpace'));
+    // var inputBox = createInputBox(document.getElementById('textEntrySpace'));
     var username = null;
     var oldX = null;
     var oldY = null;
@@ -67,7 +70,8 @@ function init(container, width, height) {
     };
 
     ctx.clear = function() {
-        ctx.fillStyle = "#ddd";
+        // ctx.fillStyle = "#ddd";
+        ctx.fillStyle = "#eee";
         ctx.fillRect(0, 0, width, height);
     };
 
@@ -105,20 +109,20 @@ function init(container, width, height) {
     canvas.node.ontouchstart = start
     canvas.node.ontouchend = stop
 
-    resetButton.node.onclick = function(e) {
-        ws.send('RESET:');
-        $(resetButton.node).blur();
-    };
+    // resetButton.node.onclick = function(e) {
+    //     ws.send('RESET:');
+    //     $(resetButton.node).blur();
+    // };
 
-    inputBox.node.onclick = function(e){
-        inputBox.node.placeholder = '';
-    };
+    // inputBox.node.onclick = function(e){
+    //     inputBox.node.placeholder = '';
+    // };
 
-    inputBox.node.onkeypress = function(e) {
-        if (e.keyCode == 13){
-            sendText();
-        }
-    };
+    // inputBox.node.onkeypress = function(e) {
+    //     if (e.keyCode == 13){
+    //         sendText();
+    //     }
+    // };
 
     /**************************************************************************
     * WebSocket event handlers
@@ -137,21 +141,21 @@ function init(container, width, height) {
     }
 
     function chat(e) {
-        var msg = e.data.replace('CHAT:','');
-        msg = '<b>' + msg.replace(':','</b>:');
-        var messageSpace = document.getElementById("messagesSpace");
-        messageSpace.innerHTML += msg + '</br></br>';
-        messageSpace.scrollTop = messageSpace.scrollHeight;
-        messageSpace.focus();
+        // var msg = e.data.replace('CHAT:','');
+        // msg = '<b>' + msg.replace(':','</b>:');
+        // var messageSpace = document.getElementById("messagesSpace");
+        // messageSpace.innerHTML += msg + '</br></br>';
+        // messageSpace.scrollTop = messageSpace.scrollHeight;
+        // messageSpace.focus();
     }
 
     function info(e) {
-        var msg = e.data.replace('INFO:','');
-        msg = '<i>'+msg+'</i>';
-        var messageSpace = document.getElementById("messagesSpace");
-        messageSpace.innerHTML += msg + '</br></br>';
-        messageSpace.scrollTop = messageSpace.scrollHeight;
-        messageSpace.focus();
+        // var msg = e.data.replace('INFO:','');
+        // msg = '<i>'+msg+'</i>';
+        // var messageSpace = document.getElementById("messagesSpace");
+        // messageSpace.innerHTML += msg + '</br></br>';
+        // messageSpace.scrollTop = messageSpace.scrollHeight;
+        // messageSpace.focus();
     }
 
     function reset(e) {
@@ -181,15 +185,15 @@ function init(container, width, height) {
     }
 
     function users(e) {
-        var params = e.data.split(':');
-        var userlist = JSON.parse(params[1]);
-        var userlistSpace = document.getElementById("userlistSpace");
-        ul = '</br><b>USERS</b></br>';
-        ul += '<i>'+userlist.length+' user(s) online</i><hr>';
-        for(var i in userlist){
-            ul += userlist[i] + '</br>';
-        }
-        userlistSpace.innerHTML = ul;
+        // var params = e.data.split(':');
+        // var userlist = JSON.parse(params[1]);
+        // var userlistSpace = document.getElementById("userlistSpace");
+        // ul = '</br><b>USERS</b></br>';
+        // ul += '<i>'+userlist.length+' user(s) online</i><hr>';
+        // for(var i in userlist){
+        //     ul += userlist[i] + '</br>';
+        // }
+        // userlistSpace.innerHTML = ul;
     }
 
     // determine websocket URI
@@ -243,47 +247,48 @@ function init(container, width, height) {
     * jQuery animation functions
     **************************************************************************/
 
-    $(".colorSpace").hover( function(){
-        $(this).animate({ height: "45", width: "45" }, "fast");
-    }, function(){
-        $(this).animate({ height: "40", width: "40" }, "fast");
-    });
+    // $(".colorSpace").hover( function(){
+    //     $(this).animate({ height: "45", width: "45" }, "fast");
+    // }, function(){
+    //     $(this).animate({ height: "40", width: "40" }, "fast");
+    // });
 
-    $(".colorSpace").click( function(){
-        fillColor = $(this).css('background-color');
-        fillBoxes();
-    });
+    // $(".colorSpace").click( function(){
+    //     fillColor = $(this).css('background-color');
+    //     fillBoxes();
+    // });
 
-    $(".brushSpace").hover( function(){
-        var size = parseFloat($(this).attr('id'));
-        $(this).animate({ height: size + 5, width: size + 5 }, "fast");
-    }, function(){
-        var size = parseFloat($(this).attr('id'));
-        $(this).animate({ height: size, width: size }, "fast");
-    });
+    // $(".brushSpace").hover( function(){
+    //     var size = parseFloat($(this).attr('id'));
+    //     $(this).animate({ height: size + 5, width: size + 5 }, "fast");
+    // }, function(){
+    //     var size = parseFloat($(this).attr('id'));
+    //     $(this).animate({ height: size, width: size }, "fast");
+    // });
 
-    $(".brushSpace").click( function(){
-        linewidth = parseFloat($(this).attr('id'));
-    });
+    // $(".brushSpace").click( function(){
+    //     linewidth = parseFloat($(this).attr('id'));
+    // });
 
     /**************************************************************************
     * miscellaneous helper functions
     **************************************************************************/
 
-    function fillBoxes(){
-        $('.brushSpace').css('background-color', fillColor);
-    }
+    // function fillBoxes(){
+    //     $('.brushSpace').css('background-color', fillColor);
+    // }
 
-    function sendText(e){
-        ws.send('CHAT:' + inputBox.node.value);
-        inputBox.node.value = '';
-    }
+    // function sendText(e){
+    //     ws.send('CHAT:' + inputBox.node.value);
+    //     inputBox.node.value = '';
+    // }
 
     ctx.clear();
-    fillBoxes();
+    // fillBoxes();
 }
 
 window.onload = function(){
     var container = document.getElementById('canvasSpace');
-    init(container, 500, 500);
+    // 16 x 9 canvas
+    init(container, 700, 394);
 }
