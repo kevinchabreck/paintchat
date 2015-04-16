@@ -60,6 +60,7 @@ function init(container, width, height) {
     **************************************************************************/
 
     ctx.draw = function(x1, y1, x2, y2, linewidth, color) {
+        this.lineJoin = "round";
         this.strokeStyle = color;
         this.beginPath();
         this.moveTo(x1, y1);

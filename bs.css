@@ -1,5 +1,16 @@
+html {
+  /*position: absolute;*/
+  position: relative;
+  min-height: 100%;
+  /*width: auto;*/
+}
+
 /* Space out content a bit */
 body {
+  /*position: relative;*/
+  min-height: 100%;
+  /*position: absolute;*/
+  /*width: auto;*/
   padding-top: 20px;
   padding-bottom: 20px;
 }
@@ -24,22 +35,27 @@ body {
   line-height: 40px;
 }
 
-/* Custom page footer */
-.footer {
-  padding-top: 19px;
-  color: #777;
-  border-top: 1px solid #e5e5e5;
+/* Customize container */
+/*@media (min-width: 768px) {
+  .container {
+    width: 730px;
+    max-width: 730px;
+    padding-left: 0px;
+    padding-right: 0px;
+    max-width: 1024px;
+  }
+}*/
+
+.container {
+    width: 730px;
+    max-width: 730px;
+    padding-left: 0px;
+    padding-right: 0px;
+    /*max-width: 1024px;*/
 }
 
-/* Customize container */
-@media (min-width: 768px) {
-  .container {
-    max-width: 730px;
-    /*max-width: 1024px;*/
-  }
-}
 .container-narrow > hr {
-  margin: 30px 0;
+  margin: 20px 0;
   /*margin: 10px 0;*/
 }
 
@@ -48,29 +64,39 @@ body {
 .container
 .jumbotron {
   text-align: center;
-  background-color: white;*/
-  padding-top: 0px;
-  padding-bottom: 0px;
+  background-color: white;
+  /*padding-top: 0px;*/
+  /*padding-bottom: 0px;*/
   padding-right: 0px;
   padding-left: 0px;
   border-radius: 0px;
-  margin-top: 0px;
+  /*margin-top: 0px;*/
   margin-bottom: 0px;
-  margin-left: 0px;
-  margin-right: 0px;
+  /*margin-left: 0px;*/
+  /*margin-right: 0px;*/
+  /*float:none;*/
+  display:inline-block;
+  vertical-align:middle;
 }
-/*.jumbotron .btn {
-  padding: 14px 24px;
-  font-size: 21px;
-}*/
+
+/* Custom page footer */
+.footer {
+  text-align: center;
+  padding-top: 19px;
+  color: #777;
+  border-top: 1px solid #e5e5e5;
+  /*position: absolute;*/
+  bottom: 0;
+  width: 100%;
+}
 
 /* Supporting marketing content */
-.marketing {
+/*.marketing {
   margin: 40px 0;
 }
 .marketing p + h4 {
   margin-top: 28px;
-}
+}*/
 
 /* Responsive: Portrait tablets and up */
 @media screen and (min-width: 768px) {
@@ -78,15 +104,18 @@ body {
   .header,
   .marketing,
   .footer {
-    padding-right: 0;
+/*    padding-right: 0;
     padding-left: 0;
+    width: 100%;*/
   }
   /* Space out the masthead */
   .header {
-    margin-bottom: 30px;
+    /*margin-bottom: 30px;*/
+    /*margin-bottom: 10px;*/
   }
   /* Remove the bottom border on the jumbotron for visual effect */
   .jumbotron {
-    border-bottom: 0;
+    /*border-bottom: 0;*/
+    /*width:auto;*/
   }
 }

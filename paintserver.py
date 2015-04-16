@@ -112,7 +112,10 @@ class PaintFactory(WebSocketServerFactory):
     def updateClients(self, msg):
         for c in self.CONNECTIONS:
             c.sendMessage(msg)
-            print "update *"+msg+"* sent to " + c.peer + " ["+self.CLIENTS[c]+"]"
+            log = "update ["+msg+"] sent to "+c.peer
+            if c in self.CLIENTS:
+                log += " ("+self.CLIENTS[c]+")"
+            print log
 
     # @function: checkName
     # @description: Checks that a client's requested username is valid.
