@@ -7,13 +7,23 @@ function createCanvas(parent, width, height){
     canvas.node = document.createElement('canvas');
     canvas.node.id = 'canvas';
     canvas.context = canvas.node.getContext('2d');
-    // 16 x 9 canvas
-    // canvas.node.width = 700;
-    // canvas.node.height = 394;
     canvas.node.width = width;
     canvas.node.height = height;
+    canvas.isDrawing = false;
+    canvas.isFocused = false;
     $(parent).prepend(canvas.node);
+    // $(parent).append(canvas.node);
     return canvas;
+}
+
+function createSizeSlider(){
+    return $('#sizeSlider').noUiSlider({
+        start: [6],
+        range: {
+            'min': 1,
+            'max': 40
+        }
+    });
 }
 
 // function createResetButton(parent){
@@ -47,8 +57,10 @@ function init(container, width, height) {
 
     var canvas = createCanvas(container, width, height);
     var ctx = canvas.context;
+    var rect = canvas.node.getBoundingClientRect();
     // var resetButton = createResetButton(document.getElementById('buttonSpace'));
     // var inputBox = createInputBox(document.getElementById('textEntrySpace'));
+    var sizeSlider = createSizeSlider();
     var username = null;
     var oldX = null;
     var oldY = null;
@@ -71,7 +83,6 @@ function init(container, width, height) {
     };
 
     ctx.clear = function() {
-        // ctx.fillStyle = "#ddd";
         ctx.fillStyle = "#eee";
         ctx.fillRect(0, 0, width, height);
     };
@@ -83,8 +94,11 @@ function init(container, width, height) {
     function move(e) {
         if(canvas.isDrawing){
             e.preventDefault();
-            var newX = e.pageX - this.offsetLeft;
-            var newY = e.pageY - this.offsetTop;
+            var newX = e.pageX - rect.left;
+            var newY = e.pageY - rect.top;
+            // console.log("newX: "+newX+" newY: "+newY);
+            // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
+            // console.log("this.offsetLeft: "+this.offsetLeft+" this.offsetTop: "+this.offsetTop);
             ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
             oldX = newX;
             oldY = newY;
@@ -93,8 +107,8 @@ function init(container, width, height) {
 
     function start(e) {
         e.preventDefault();
-        oldX = e.pageX - this.offsetLeft;
-        oldY = e.pageY - this.offsetTop;
+        oldX = e.pageX - rect.left;
+        oldY = e.pageY - rect.top;
         canvas.isDrawing = true;
     }
 
@@ -102,13 +116,32 @@ function init(container, width, height) {
         canvas.isDrawing = false;
     }
 
+    function focus(e) {
+        oldX = e.pageX - rect.left;
+        oldY = e.pageY - rect.top;
+        canvas.isFocused = true;
+    }
+
+    function unfocus(e) {
+        canvas.isFocused = false;
+    }
+
     canvas.node.onmousemove = move
     canvas.node.onmousedown = start
     canvas.node.onmouseup = stop
+    canvas.node.onmouseover = focus
+    canvas.node.onmouseout = unfocus
 
     canvas.node.ontouchmove = move
     canvas.node.ontouchstart = start
     canvas.node.ontouchend = stop
+
+    $('#sizeSlider').on('slide', function(e){
+        linewidth = $("#sizeSlider").val();
+    });
+
+    $(document).on('mousedown', start);
+    $(document).on('mouseup', stop);
 
     // resetButton.node.onclick = function(e) {
     //     ws.send('RESET:');
@@ -164,7 +197,13 @@ function init(container, width, height) {
     }
 
     function accepted(e) {
-        document.title = username + ' - draw.ws';
+        var title = username;
+        if (window.location.protocol === "file:") {
+            title += " - local";
+        } else {
+            title += ' - draw.ws';
+        }
+        document.title = title;
         ws.send('GETPAINTBUFFER:');
     }
 
@@ -227,14 +266,14 @@ function init(container, width, height) {
         };
 
         var handlers = {
-            'PAINT' : paint,
-            'CHAT' : chat,
-            'INFO' : info,
-            'RESET' : reset,
-            'ACCEPTED' : accepted,
-            'DENIED' : denied,
-            'PAINTBUFFER' : paintbuffer,
-            'USERS' : users
+            'PAINT': paint,
+            'CHAT': chat,
+            'INFO': info,
+            'RESET': reset,
+            'ACCEPTED': accepted,
+            'DENIED': denied,
+            'PAINTBUFFER': paintbuffer,
+            'USERS': users
         }
 
         ws.onmessage = function(e) {
@@ -285,11 +324,9 @@ function init(container, width, height) {
     // }
 
     ctx.clear();
-    // fillBoxes();
 }
 
 window.onload = function(){
     var container = document.getElementById('canvasSpace');
-    // 16 x 9 canvas
-    init(container, 700, 394);
+    init(container, 700, 394); // 16 x 9 canvas
 }

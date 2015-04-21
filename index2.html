@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
     <link rel="stylesheet" href="bs.css">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="js/noUiSlider/jquery.nouislider.min.js"></script>
+    <link href="js/noUiSlider/jquery.nouislider.min.css" rel="stylesheet">
+
     <script src='paint2.js'></script>
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!--[if lt IE 9]>
@@ -22,52 +25,32 @@
   <body>
 
     <div class="container">
+
       <div class="header clearfix">
-        <!-- <nav>
-          <ul class="nav nav-pills pull-right">
-            <li role="presentation" class="active"><a href="#">Home</a></li>
-            <li role="presentation"><a href="#">About</a></li>
-            <li role="presentation"><a href="#">Contact</a></li>
-          </ul>
-        </nav> -->
-        <h3 class="text-muted">draw.ws</h3>
+        <h2 class="text-muted">draw.ws</h2>
       </div>
 
-      <div id="canvasSpace" class="jumbotron container">
-      <!-- <div id="canvasSpace" class="jumbotron"> -->
-      </div>
-
-      <!-- <div class="row marketing">
-        <div class="col-lg-6">
-          <h4>Subheading</h4>
-          <p>Donec id elit non mi porta gravida at eget metus. Maecenas
-          faucibus mollis interdum.</p>
-
-          <h4>Subheading</h4>
-          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras
-          mattis consectetur purus sit amet fermentum.</p>
-
-          <h4>Subheading</h4>
-          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
-        </div>
-
-        <div class="col-lg-6">
-          <h4>Subheading</h4>
-          <p>Donec id elit non mi porta gravida at eget metus. Maecenas
-          faucibus mollis interdum.</p>
-
-          <h4>Subheading</h4>
-          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras
-          mattis consectetur purus sit amet fermentum.</p>
-
-          <h4>Subheading</h4>
-          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+      <div class="row">
+        <div class="col-lg-12">
+          <div class="row">
+            <div id="canvasSpace"></div>
+            <!-- <div id="canvasSpace" class="container"></div> -->
+            <!-- <div id="canvasSpace" class="container col-lg-12"></div> -->
+            <!-- <div id="canvasSpace" class="col-lg-12"></div> -->
+          </div>
+          <div id="toolSpace" class="row">
+          <!-- <div class="row"> -->
+            <div id="colorSpace" class="col-lg-6"></div>
+            <!-- <div id="sizeSpace" class="slider col-lg-6"></div> -->
+            <div id="sizeSpace" class="col-lg-3 pull-right">
+              <div id="sizeSlider"></div>
+            </div>
+          </div>
         </div>
       </div>
- -->
+
       <footer class="footer">
         <p>&copy; Kevin Chabreck 2015</p>
-        <!-- &copy; Kevin Chabreck 2015 -->
       </footer>
     </div> <!-- /container -->
   </body>
