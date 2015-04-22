@@ -146,7 +146,7 @@ function init(container, width, height) {
     }
 
     function move(e) {
-        e.preventDefault();
+        // e.preventDefault();
         // console.log("(move) touches.touchX: "+e.originalEvent.touches[0].pageX);
         // console.log("(move) touches.touchY: "+e.originalEvent.touches[0].pageY);
         if(typeof e.originalEvent.touches != 'undefined'){
