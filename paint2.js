@@ -11,18 +11,38 @@ function createCanvas(parent, width, height){
     canvas.node.height = height;
     canvas.isDrawing = false;
     canvas.isFocused = false;
-    $(parent).prepend(canvas.node);
-    // $(parent).append(canvas.node);
+    $(parent).append(canvas.node);
     return canvas;
 }
 
-function createSizeSlider(){
+function createSlider(){
     return $('#sizeSlider').noUiSlider({
         start: [6],
         range: {
             'min': 1,
             'max': 40
         }
+    });
+}
+
+function createPalette(){
+    return $("#colorPalette").spectrum({
+        showPaletteOnly: true,
+        togglePaletteOnly: true,
+        togglePaletteMoreText: 'more',
+        togglePaletteLessText: 'less',
+        clickoutFiresChange: true,
+        color: 'black',
+        palette: [
+            ["#000","#444","#666","#999","#ccc","#eee","#f3f3f3","#fff"],
+            ["#f00","#f90","#ff0","#0f0","#0ff","#00f","#90f","#f0f"],
+            ["#f4cccc","#fce5cd","#fff2cc","#d9ead3","#d0e0e3","#cfe2f3","#d9d2e9","#ead1dc"],
+            ["#ea9999","#f9cb9c","#ffe599","#b6d7a8","#a2c4c9","#9fc5e8","#b4a7d6","#d5a6bd"],
+            ["#e06666","#f6b26b","#ffd966","#93c47d","#76a5af","#6fa8dc","#8e7cc3","#c27ba0"],
+            ["#c00","#e69138","#f1c232","#6aa84f","#45818e","#3d85c6","#674ea7","#a64d79"],
+            ["#900","#b45f06","#bf9000","#38761d","#134f5c","#0b5394","#351c75","#741b47"],
+            ["#600","#783f04","#7f6000","#274e13","#0c343d","#073763","#20124d","#4c1130"]
+        ]
     });
 }
 
@@ -60,26 +80,35 @@ function init(container, width, height) {
     var rect = canvas.node.getBoundingClientRect();
     // var resetButton = createResetButton(document.getElementById('buttonSpace'));
     // var inputBox = createInputBox(document.getElementById('textEntrySpace'));
-    var sizeSlider = createSizeSlider();
+    createSlider();
+    createPalette();
     var username = null;
     var oldX = null;
     var oldY = null;
     var fillColor = 'black';
-    var linewidth = 5;
+    var linewidth = $('#sizeSlider').val();
 
     /**************************************************************************
     * Canvas manipulation
     **************************************************************************/
 
-    ctx.draw = function(x1, y1, x2, y2, linewidth, color) {
-        this.lineJoin = "round";
-        this.strokeStyle = color;
-        this.beginPath();
-        this.moveTo(x1, y1);
-        this.lineTo(x2, y2);
-        this.lineWidth = linewidth;
-        this.closePath()
-        this.stroke();
+    ctx.draw = function(x1, y1, x2, y2, width, color) {
+        if((x1 == x2)&&(y1 == y2)){
+            this.fillStyle = color;
+            this.beginPath();
+            this.arc(x1, y1, width/2, 0, 2*Math.PI, false);
+            this.fill();
+            this.closePath();
+        } else {
+            this.lineJoin = 'round';
+            this.strokeStyle = color;
+            this.lineWidth = width;
+            this.beginPath();
+            this.moveTo(x1, y1);
+            this.lineTo(x2, y2);
+            this.closePath()
+            this.stroke();
+        }
     };
 
     ctx.clear = function() {
@@ -91,8 +120,8 @@ function init(container, width, height) {
     * Canvas, chat box, and reset button event handlers
     **************************************************************************/
 
-    function move(e) {
-        if(canvas.isDrawing){
+    function draw(e) {
+        if(canvas.isDrawing && canvas.isFocused){
             e.preventDefault();
             var newX = e.pageX - rect.left;
             var newY = e.pageY - rect.top;
@@ -100,15 +129,16 @@ function init(container, width, height) {
             // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
             // console.log("this.offsetLeft: "+this.offsetLeft+" this.offsetTop: "+this.offsetTop);
             ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
-            oldX = newX;
-            oldY = newY;
         }
+    }
+
+    function move(e) {
+        oldX = e.pageX - rect.left;
+        oldY = e.pageY - rect.top;
     }
 
     function start(e) {
         e.preventDefault();
-        oldX = e.pageX - rect.left;
-        oldY = e.pageY - rect.top;
         canvas.isDrawing = true;
     }
 
@@ -117,31 +147,45 @@ function init(container, width, height) {
     }
 
     function focus(e) {
-        oldX = e.pageX - rect.left;
-        oldY = e.pageY - rect.top;
         canvas.isFocused = true;
     }
 
     function unfocus(e) {
+        if(canvas.isDrawing){
+            draw(e);
+        }
         canvas.isFocused = false;
     }
 
-    canvas.node.onmousemove = move
-    canvas.node.onmousedown = start
-    canvas.node.onmouseup = stop
-    canvas.node.onmouseover = focus
-    canvas.node.onmouseout = unfocus
-
-    canvas.node.ontouchmove = move
-    canvas.node.ontouchstart = start
-    canvas.node.ontouchend = stop
-
-    $('#sizeSlider').on('slide', function(e){
+    function readSize() {
         linewidth = $("#sizeSlider").val();
-    });
+    }
 
+    function sendReset(e) {
+        if (e.which == 114){
+            ws.send('RESET:');
+        }
+    }
+
+    function changeColor(e, color) {
+        fillColor = color;
+    }
+
+    $('#canvas').on('mousemove touchmove', draw);
+    $('#canvas').on('mousedown touchstart', start);
+    $('#canvas').on('mousedown touchstart', draw);
+    $('#canvas').on('mouseup touchend', stop);
+    $('#canvas').on('mouseover mousein ', focus);
+    $('#canvas').on('mouseout', unfocus);
+
+    $('#sizeSlider').on('slide', readSize);
+
+    $(document).on('mousemove', move);
     $(document).on('mousedown', start);
     $(document).on('mouseup', stop);
+    $(document).on('keypress', sendReset);
+
+    $("#colorPalette").on('change.spectrum', changeColor);
 
     // resetButton.node.onclick = function(e) {
     //     ws.send('RESET:');
@@ -252,7 +296,6 @@ function init(container, width, height) {
        ws = new MozWebSocket(wsuri);
     } else {
        alert("Browser does not support WebSocket!");
-       window.location = "http://autobahn.ws/unsupportedbrowser";
     }
 
     if(ws){
