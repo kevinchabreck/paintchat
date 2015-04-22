@@ -131,6 +131,11 @@ function init(container, width, height) {
     function draw(e) {
         if(canvas.isDrawing && canvas.isFocused){
             e.preventDefault();
+            // console.log("(draw) touches.touchX: "+e.originalEvent.touches[0].pageX);
+            // console.log("(draw) touches.touchY: "+e.originalEvent.touches[0].pageY);
+            if(typeof e.originalEvent.touches != 'undefined'){
+                e = e.originalEvent.touches[0];
+            }
             var newX = e.pageX - rect.left;
             var newY = e.pageY - rect.top;
             // console.log("newX: "+newX+" newY: "+newY);
@@ -141,12 +146,26 @@ function init(container, width, height) {
     }
 
     function move(e) {
+        e.preventDefault();
+        // console.log("(move) touches.touchX: "+e.originalEvent.touches[0].pageX);
+        // console.log("(move) touches.touchY: "+e.originalEvent.touches[0].pageY);
+        if(typeof e.originalEvent.touches != 'undefined'){
+            e = e.originalEvent.touches[0];
+        }
         oldX = e.pageX - rect.left;
         oldY = e.pageY - rect.top;
+        console.log("move(): X: "+oldX+" Y: "+oldY);
+        console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
+        console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
     }
 
     function start(e) {
         e.preventDefault();
+        if(typeof e.originalEvent.touches != 'undefined'){
+            e = e.originalEvent.touches[0];
+        }
+        oldX = e.pageX - rect.left;
+        oldY = e.pageY - rect.top;
         // $("#toolSpace").hide();
         canvas.isDrawing = true;
     }
@@ -167,10 +186,6 @@ function init(container, width, height) {
         canvas.isFocused = false;
     }
 
-    // function readSize() {
-    //     linewidth = $("#sizeSlider").val();
-    // }
-
     function sendReset(e) {
         if (e.which == 114){
             ws.send('RESET:');
@@ -183,7 +198,7 @@ function init(container, width, height) {
     }
 
     function incSize(e){
-        // console.log("incsize - linewidth = "+linewidth);
+        // e.preventDefault();
         if (linewidth < 40){
             linewidth+=4;
         }
@@ -191,7 +206,7 @@ function init(container, width, height) {
     }
 
     function decSize(e){
-        // console.log("decsize");
+        // e.preventDefault();
         if (linewidth > 4){
             linewidth-=4;
         }
@@ -202,16 +217,22 @@ function init(container, width, height) {
     $('#canvas').on('mousedown touchstart', start);
     $('#canvas').on('mousedown touchstart', draw);
     $('#canvas').on('mouseup touchend', stop);
-    $('#canvas').on('mouseover mousein ', focus);
-    $('#canvas').on('mouseout', unfocus);
+    $('#canvas').on('mouseover mousein touchstart', focus);
+    $('#canvas').on('mouseout touchend touchleave', unfocus);
+    $('#canvas').on('tap', focus);
+    $('#canvas').on('tap', start);
+    $('#canvas').on('tap', draw);
+    $('#canvas').on('tap', stop);
+    $('#canvas').on('tap', unfocus);
+
 
     $('#sizePlus').on('click', incSize);
     $('#sizeMinus').on('click', decSize);
     // $('#sizeSlider').on('slide', readSize);
 
-    $(document).on('mousemove', move);
-    $(document).on('mousedown', start);
-    $(document).on('mouseup', stop);
+    $(document).on('mousemove touchmove', move);
+    $(document).on('mousedown touchstart', start);
+    $(document).on('mouseup touchend', stop);
     $(document).on('keypress', sendReset);
 
     $("#colorPalette").on('change.spectrum', changeColor);
