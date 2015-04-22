@@ -56,6 +56,10 @@ body {
   /*padding-bottom: 10px;*/
 }
 
+#colorPalette {
+  font-size: 2em;
+}
+
 /* Main marketing message and sign up button */
 /*#canvasSpace,*/
 .container
@@ -81,6 +85,18 @@ body {
   /*float:none;*/
   /*display:inline-block;*/
   /*vertical-align:middle;*/
+}
+
+.row-centered {
+    text-align:center;
+}
+.col-centered {
+    display:inline-block;
+    float:none;
+    /* reset the text-align */
+    text-align:left;
+    /* inline-block space fix */
+    margin-right:-4px;
 }
 
 /* Supporting marketing content */

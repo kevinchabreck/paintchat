@@ -139,10 +139,12 @@ function init(container, width, height) {
 
     function start(e) {
         e.preventDefault();
+        // $("#toolSpace").hide();
         canvas.isDrawing = true;
     }
 
     function stop(e) {
+        // $("#toolSpace").show();
         canvas.isDrawing = false;
     }
 
@@ -169,6 +171,7 @@ function init(container, width, height) {
 
     function changeColor(e, color) {
         fillColor = color;
+        $("#colorPalette").css("color", color);
     }
 
     $('#canvas').on('mousemove touchmove', draw);
