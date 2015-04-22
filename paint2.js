@@ -16,13 +16,20 @@ function createCanvas(parent, width, height){
 }
 
 function createSlider(){
-    return $('#sizeSlider').noUiSlider({
-        start: [6],
-        range: {
-            'min': 1,
-            'max': 40
-        }
-    });
+    // return $('#sizeSlider').noUiSlider({
+    //     start: [6],
+    //     range: {
+    //         'min': 1,
+    //         'max': 40
+    //     }
+    // });
+    // $('#sizePlus').noUiSlider({
+    //     start: [6],
+    //     range: {
+    //         'min': 1,
+    //         'max': 40
+    //     }
+    // });
 }
 
 function createPalette(){
@@ -80,13 +87,14 @@ function init(container, width, height) {
     var rect = canvas.node.getBoundingClientRect();
     // var resetButton = createResetButton(document.getElementById('buttonSpace'));
     // var inputBox = createInputBox(document.getElementById('textEntrySpace'));
-    createSlider();
+    // createSlider();
     createPalette();
     var username = null;
     var oldX = null;
     var oldY = null;
     var fillColor = 'black';
-    var linewidth = $('#sizeSlider').val();
+    // var linewidth = $('#sizeSlider').val();
+    var linewidth = 6;
 
     /**************************************************************************
     * Canvas manipulation
@@ -174,6 +182,20 @@ function init(container, width, height) {
         $("#colorPalette").css("color", color);
     }
 
+    function incSize(e){
+        console.log("incsize");
+        if (linewidth < 40){
+            linewidth+=1;
+        }
+    }
+
+    function decSize(e){
+        console.log("decsize");
+        if (linewidth > 1){
+            linewidth-=1;
+        }
+    }
+
     $('#canvas').on('mousemove touchmove', draw);
     $('#canvas').on('mousedown touchstart', start);
     $('#canvas').on('mousedown touchstart', draw);
@@ -181,7 +203,9 @@ function init(container, width, height) {
     $('#canvas').on('mouseover mousein ', focus);
     $('#canvas').on('mouseout', unfocus);
 
-    $('#sizeSlider').on('slide', readSize);
+    $('#sizePlus').on('click', incSize);
+    $('#sizePlus').on('click', decSize);
+    // $('#sizeSlider').on('slide', readSize);
 
     $(document).on('mousemove', move);
     $(document).on('mousedown', start);

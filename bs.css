@@ -60,6 +60,11 @@ body {
   font-size: 2em;
 }
 
+#sizePlus,
+#sizeMinus {
+  font-size: 2em;
+}
+
 /* Main marketing message and sign up button */
 /*#canvasSpace,*/
 .container
