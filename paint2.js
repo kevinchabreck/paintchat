@@ -39,6 +39,7 @@ function createPalette(){
         togglePaletteMoreText: 'more',
         togglePaletteLessText: 'less',
         clickoutFiresChange: true,
+        preferredFormat: "hex",
         color: 'black',
         palette: [
             ["#000","#444","#666","#999","#ccc","#eee","#f3f3f3","#fff"],
@@ -187,30 +188,37 @@ function init(container, width, height) {
     }
 
     function sendReset(e) {
-        if (e.which == 114){
+        if ((e.type == "click")||((e.type == "keypress") && (e.which == 114))){
             ws.send('RESET:');
         }
     }
 
+
+
     function changeColor(e, color) {
         fillColor = color;
+        // alert("color > 0xffffff/2: "+(parseInt(color) > (0xffffff/2))+" (true = dark bg. false = light bg)");
         $("#colorPalette").css("color", color);
+        // $("#colorPalette").css("background-color", "red");
+        $("#colorPalette").spectrum("hide");
+        // var rgb = color.split("(")[1].split(")")[0].split(",");
+        // if (hexdec($hexcolor) > 0xffffff/2) ? $dark : $light;
     }
 
     function incSize(e){
-        // e.preventDefault();
         if (linewidth < 40){
             linewidth+=4;
+            // $("#colorPalette").css('font-size',"+=1");
+            $("#colorPalette").animate({fontSize:"+=1"});
         }
-        console.log("incsize - linewidth = "+linewidth);
     }
 
     function decSize(e){
-        // e.preventDefault();
         if (linewidth > 4){
             linewidth-=4;
+            // $("#colorPalette").css('font-size',"-=1");
+            $("#colorPalette").animate({fontSize:"-=1"});
         }
-        console.log("decsize - linewidth = "+linewidth);
     }
 
     $('#canvas').on('mousemove touchmove', draw);
@@ -225,13 +233,13 @@ function init(container, width, height) {
     $('#canvas').on('tap', stop);
     $('#canvas').on('tap', unfocus);
 
-
-    $('#sizePlus').on('click', incSize);
-    $('#sizeMinus').on('click', decSize);
-    // $('#sizeSlider').on('slide', readSize);
+    $('#sizePlus').on('click tap', incSize);
+    $('#sizeMinus').on('click tap', decSize);
+    $('#resetCanvas').on('click tap', sendReset);
 
     $(document).on('mousemove touchmove', move);
-    $(document).on('mousedown touchstart', start);
+    // $(document).on('mousedown touchstart', start);
+    $(document).on('mousedown', start);
     $(document).on('mouseup touchend', stop);
     $(document).on('keypress', sendReset);
 

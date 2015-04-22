@@ -61,7 +61,8 @@ body {
 }
 
 #sizePlus,
-#sizeMinus {
+#sizeMinus,
+#resetCanvas {
   font-size: 2em;
 }
 
@@ -90,6 +91,10 @@ body {
   /*float:none;*/
   /*display:inline-block;*/
   /*vertical-align:middle;*/
+}
+
+.canvas {
+
 }
 
 .row-centered {
