@@ -167,9 +167,9 @@ function init(container, width, height) {
         canvas.isFocused = false;
     }
 
-    function readSize() {
-        linewidth = $("#sizeSlider").val();
-    }
+    // function readSize() {
+    //     linewidth = $("#sizeSlider").val();
+    // }
 
     function sendReset(e) {
         if (e.which == 114){
@@ -183,17 +183,19 @@ function init(container, width, height) {
     }
 
     function incSize(e){
-        console.log("incsize");
+        // console.log("incsize - linewidth = "+linewidth);
         if (linewidth < 40){
-            linewidth+=1;
+            linewidth+=4;
         }
+        console.log("incsize - linewidth = "+linewidth);
     }
 
     function decSize(e){
-        console.log("decsize");
-        if (linewidth > 1){
-            linewidth-=1;
+        // console.log("decsize");
+        if (linewidth > 4){
+            linewidth-=4;
         }
+        console.log("decsize - linewidth = "+linewidth);
     }
 
     $('#canvas').on('mousemove touchmove', draw);
@@ -204,7 +206,7 @@ function init(container, width, height) {
     $('#canvas').on('mouseout', unfocus);
 
     $('#sizePlus').on('click', incSize);
-    $('#sizePlus').on('click', decSize);
+    $('#sizeMinus').on('click', decSize);
     // $('#sizeSlider').on('slide', readSize);
 
     $(document).on('mousemove', move);
