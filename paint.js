@@ -280,8 +280,7 @@ function init(container, width, height) {
 
     function accepted(e) {
         var username = e.data.replace('ACCEPTED:','');
-        // alertify.success("connected to "+wsuri+" with username "+name);
-        alertify.success("connected to server!");
+        alertify.success('connected to server as "'+username+'"');
         var title = username;
         if (window.location.protocol === "file:") {
             title += " - local";
@@ -289,20 +288,20 @@ function init(container, width, height) {
             title += ' - draw.ws';
         }
         document.title = title;
-        // ws.send('GETPAINTBUFFER:');
     }
 
     function denied(e) {
-        var reason = e.data.replace('DENIED:','');
-        // username = alertify.prompt("Denied!\nReason: "+reason+"\nEnter new username");
-        // ws.send('USERNAME:' + username);
-        alertify.prompt("Denied!\nReason: "+reason+"\nEnter new username", function (e, username) {
+        // var reason = e.data.replace('DENIED:','');
+        var msg = "Unable to connect with that username! ";
+        msg +=    "Reason: "+e.data.replace('DENIED:','')+". ";
+        msg +=    "Enter new username";
+        alertify.prompt(msg, function (e, username) {
             if (e) {
                 ws.send('USERNAME:'+username);
             } else {
                 ws.send('USERNAME:anonymous');
             }
-        }, "");
+        }, "anonymous");
     }
 
     function paintbuffer(e) {
@@ -328,6 +327,11 @@ function init(container, width, height) {
         // userlistSpace.innerHTML = ul;
     }
 
+    function error(e) {
+        var error = e.data.replace('ERROR:','');
+        alertify.log("server error: "+error);
+    }
+
     // determine websocket URI
     var port = "9001"
     var wsuri;
@@ -344,16 +348,12 @@ function init(container, width, height) {
     } else if ("MozWebSocket" in window) {
        ws = new MozWebSocket(wsuri);
     } else {
-       // alert("Browser does not support WebSocket!");
        alertify.error("Browser does not support WebSocket!");
     }
 
     if(ws){
         ws.onopen = function() {
-            // alertify.success("connection to "+wsuri+" established!");
-            // username = window.prompt("Enter your username");
-            // ws.send('USERNAME:' + username);
-            ws.send('GETPAINTBUFFER:');
+            ws.send('GETBUFFER:');
             alertify.prompt("Enter your username", function (e, username) {
                 if (e) {
                     ws.send('USERNAME:' + username);
@@ -375,7 +375,8 @@ function init(container, width, height) {
             'ACCEPTED': accepted,
             'DENIED': denied,
             'PAINTBUFFER': paintbuffer,
-            'USERS': users
+            'USERS': users,
+            'ERROR': error
         }
 
         ws.onmessage = function(e) {
