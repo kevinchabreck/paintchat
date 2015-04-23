@@ -56,12 +56,14 @@ body {
   /*padding-bottom: 10px;*/
 }
 
-#colorPalette {
+/*#colorPalette {
   font-size: 2em;
-}
+}*/
 
+#colorPalette,
 #sizePlus,
 #sizeMinus,
+#selectEraser,
 #resetCanvas {
   font-size: 2em;
 }

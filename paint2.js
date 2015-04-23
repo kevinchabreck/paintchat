@@ -10,26 +10,10 @@ function createCanvas(parent, width, height){
     canvas.node.width = width;
     canvas.node.height = height;
     canvas.isDrawing = false;
+    canvas.isErasing = false;
     canvas.isFocused = false;
     $(parent).append(canvas.node);
     return canvas;
-}
-
-function createSlider(){
-    // return $('#sizeSlider').noUiSlider({
-    //     start: [6],
-    //     range: {
-    //         'min': 1,
-    //         'max': 40
-    //     }
-    // });
-    // $('#sizePlus').noUiSlider({
-    //     start: [6],
-    //     range: {
-    //         'min': 1,
-    //         'max': 40
-    //     }
-    // });
 }
 
 function createPalette(){
@@ -53,16 +37,6 @@ function createPalette(){
         ]
     });
 }
-
-// function createResetButton(parent){
-//     var button = {};
-//     button.node = document.createElement('input');
-//     button.node.type = 'submit';
-//     button.node.id = 'reset';
-//     button.node.value = "Reset!";
-//     parent.appendChild(button.node);
-//     return button;
-// }
 
 // function createInputBox(parent){
 //     var textBox = {};
@@ -132,24 +106,23 @@ function init(container, width, height) {
     function draw(e) {
         if(canvas.isDrawing && canvas.isFocused){
             e.preventDefault();
-            // console.log("(draw) touches.touchX: "+e.originalEvent.touches[0].pageX);
-            // console.log("(draw) touches.touchY: "+e.originalEvent.touches[0].pageY);
+            var color = fillColor;
+            var size = linewidth;
+            if(canvas.isErasing){
+                color = "#eee";
+                size = 20;
+            }
             if(typeof e.originalEvent.touches != 'undefined'){
                 e = e.originalEvent.touches[0];
             }
             var newX = e.pageX - rect.left;
             var newY = e.pageY - rect.top;
-            // console.log("newX: "+newX+" newY: "+newY);
-            // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
-            // console.log("this.offsetLeft: "+this.offsetLeft+" this.offsetTop: "+this.offsetTop);
-            ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+linewidth+' '+fillColor);
+            ws.send('PAINT:'+oldX+' '+oldY+' '+newX+' '+newY+' '+size+' '+color);
         }
     }
 
     function move(e) {
         // e.preventDefault();
-        // console.log("(move) touches.touchX: "+e.originalEvent.touches[0].pageX);
-        // console.log("(move) touches.touchY: "+e.originalEvent.touches[0].pageY);
         if(typeof e.originalEvent.touches != 'undefined'){
             e = e.originalEvent.touches[0];
         }
@@ -193,9 +166,8 @@ function init(container, width, height) {
         }
     }
 
-
-
     function changeColor(e, color) {
+        canvas.isErasing = false;
         fillColor = color;
         // alert("color > 0xffffff/2: "+(parseInt(color) > (0xffffff/2))+" (true = dark bg. false = light bg)");
         $("#colorPalette").css("color", color);
@@ -221,6 +193,11 @@ function init(container, width, height) {
         }
     }
 
+    function startErase(e){
+        canvas.isErasing = true;
+        // console.log("canvas.isErasing: "+canvas.isErasing);
+    }
+
     $('#canvas').on('mousemove touchmove', draw);
     $('#canvas').on('mousedown touchstart', start);
     $('#canvas').on('mousedown touchstart', draw);
@@ -235,6 +212,7 @@ function init(container, width, height) {
 
     $('#sizePlus').on('click tap', incSize);
     $('#sizeMinus').on('click tap', decSize);
+    $('#selectEraser').on('click tap', startErase);
     $('#resetCanvas').on('click tap', sendReset);
 
     $(document).on('mousemove touchmove', move);
@@ -299,6 +277,9 @@ function init(container, width, height) {
     }
 
     function accepted(e) {
+        var username = e.data.replace('ACCEPTED:','');
+        // alertify.success("connected to "+wsuri+" with username "+name);
+        alertify.success("connected to server!");
         var title = username;
         if (window.location.protocol === "file:") {
             title += " - local";
@@ -306,13 +287,20 @@ function init(container, width, height) {
             title += ' - draw.ws';
         }
         document.title = title;
-        ws.send('GETPAINTBUFFER:');
+        // ws.send('GETPAINTBUFFER:');
     }
 
     function denied(e) {
         var reason = e.data.replace('DENIED:','');
-        username = window.prompt("Denied!\nReason: "+reason+"\nEnter new username");
-        ws.send('USERNAME:' + username);
+        // username = alertify.prompt("Denied!\nReason: "+reason+"\nEnter new username");
+        // ws.send('USERNAME:' + username);
+        alertify.prompt("Denied!\nReason: "+reason+"\nEnter new username", function (e, username) {
+            if (e) {
+                ws.send('USERNAME:'+username);
+            } else {
+                ws.send('USERNAME:anonymous');
+            }
+        }, "");
     }
 
     function paintbuffer(e) {
@@ -339,11 +327,12 @@ function init(container, width, height) {
     }
 
     // determine websocket URI
+    var port = "9001"
     var wsuri;
     if (window.location.protocol === "file:") {
-       wsuri = "ws://localhost:9000";
+       wsuri = "ws://localhost:"+port;
     } else {
-       wsuri = "ws://" + window.location.hostname + ":9000";
+       wsuri = "ws://"+window.location.hostname+":"+port;
     }
 
     // open websocket
@@ -353,17 +342,27 @@ function init(container, width, height) {
     } else if ("MozWebSocket" in window) {
        ws = new MozWebSocket(wsuri);
     } else {
-       alert("Browser does not support WebSocket!");
+       // alert("Browser does not support WebSocket!");
+       alertify.error("Browser does not support WebSocket!");
     }
 
     if(ws){
         ws.onopen = function() {
-            username = window.prompt("Enter your username");
-            ws.send('USERNAME:' + username);
+            // alertify.success("connection to "+wsuri+" established!");
+            // username = window.prompt("Enter your username");
+            // ws.send('USERNAME:' + username);
+            ws.send('GETPAINTBUFFER:');
+            alertify.prompt("Enter your username", function (e, username) {
+                if (e) {
+                    ws.send('USERNAME:' + username);
+                } else {
+                    ws.send('USERNAME:anonymous');
+                }
+            }, "anonymous");
         };
 
         ws.onclose = function() {
-            alert('server shut down');
+            alertify.error('server shut down');
         };
 
         var handlers = {
@@ -378,6 +377,7 @@ function init(container, width, height) {
         }
 
         ws.onmessage = function(e) {
+            // alertify.log("server: "+e.data);
             var params = e.data.split(':');
             var header = params[0];
             handlers[header](e);

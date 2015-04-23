@@ -13,16 +13,16 @@
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.6.2/spectrum.min.js"></script>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.6.1/spectrum.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alertify.js/0.3.0/alertify.min.js"></script>
+    <link rel="stylesheet" href="js/alertify/alertify.core.css">
+    <link rel="stylesheet" href="js/alertify/alertify.default.css">
 
-    <!--
-    <script src="js/noUiSlider/jquery.nouislider.min.js"></script>
-    <link href="js/noUiSlider/jquery.nouislider.min.css" rel="stylesheet">
-     -->
     <!-- uncomment if CDNs unavailable -->
     <!-- <link rel="stylesheet" href="js/bootstrap/bootstrap.min.css">
     <script src="js/jquery/jquery.min.js"></script>
     <script src="js/spectrum/spectrum.min.js"></script>
-    <link rel="stylesheet" href="js/spectrum/spectrum.min.css"> -->
+    <link rel="stylesheet" href="js/spectrum/spectrum.min.css">
+    <script src="js/alertify/alertify.min.js"></script> -->
     <!-- custom stylings and javascript -->
     <link rel="stylesheet" href="bs.css">
     <script src='paint2.js'></script>
@@ -38,7 +38,8 @@
     <div class="container">
 
       <div class="header clearfix">
-        <h2 class="text-muted">draw.ws</h2>
+        <!-- <h2 class="text-muted">draw.ws</h2> -->
+        <h1>draw.ws</h1>
       </div>
 
       <div class="row">
@@ -47,11 +48,6 @@
             <div id="canvasSpace"></div>
           </div>
           <div id="toolSpace" class="row row-centered">
-          <!-- <div class="row"> -->
-          <!-- <div class="col-lg-12"> -->
-          <!-- <div id="toolSpace" class="col-lg-12"> -->
-          <!-- <div id="toolSpace" class="container"> -->
-            <!-- <div class="col-lg-1 col-lg-offset-4"> -->
             <div class="col-lg-1 col-centered">
               <span type='span' id="colorPalette" class="glyphicon glyphicon-pencil"></span>
             </div>
@@ -62,9 +58,11 @@
               <span type='span' id="sizePlus" class="glyphicon glyphicon-plus-sign"></span>
             </div>
             <div class="col-lg-1 col-centered">
-              <span type='span' id="resetCanvas" class="glyphicon glyphicon-refresh"></span>
+              <span type='span' id="selectEraser" class="glyphicon glyphicon-erase"></span>
             </div>
-          <!-- </div> -->
+            <div class="col-lg-1 col-centered">
+              <span type='span' id="resetCanvas" class="glyphicon glyphicon-trash"></span>
+            </div>
           </div>
         </div>
       </div>
