@@ -55,3 +55,6 @@ docs/_build/
 
 # PyBuilder
 target/
+
+*/.DS_Store
+js/alertify.js-0.3.11/
