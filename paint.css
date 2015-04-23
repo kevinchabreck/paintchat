@@ -1,117 +1,142 @@
 
-/*.topleft {
-	position: fixed;
-	top: 20px;
-	left: 20px;
+/* Space out content a bit */
+body {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/* Everything but the jumbotron gets side spacing for mobile first views */
+.header,
+.marketing,
+.footer {
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+/* Custom page header */
+.header {
+  padding-bottom: 20px;
+  /*border-bottom: 1px solid #e5e5e5;*/
+}
+
+/* Custom page footer */
+.footer {
+  text-align: center;
+  margin-top: 15px;
+  padding-top: 19px;
+  color: #777;
+  /*border-top: 1px solid #e5e5e5;*/
+}
+
+/* Make the masthead heading the same height as the navigation */
+/*.header h3 {
+  margin-top: 0;
+  margin-bottom: 0;
+  line-height: 40px;
 }*/
 
-#reset {
-	background-color: #ccc;
-	-moz-border-radius: 10px;
-	-webkit-border-radius: 10px;
-	border-radius:6px;
-	color: #fff;
-	font-family: 'Helvetica';
-	font-size: 20px;
-	text-decoration: none;
-	cursor: poiner;
-	border:none;
-	height:50px;
-	width:100px;
-	top: 25%;
-	float: left;
+/* Customize container */
+/*@media (min-width: 768px) {
+  .container {
+    width: 730px;
+    max-width: 730px;
+    padding-left: 0px;
+    padding-right: 0px;
+    max-width: 1024px;
+  }
+}*/
+
+#toolSpace {
+  padding-top: 10px;
+  /*padding-bottom: 10px;*/
 }
 
-#reset:hover {
-	border: none;
-	background: red;
-	box-shadow: 0px 0px 1px #777;
+#canvasSpace {
+  padding-top: 20px;
+  /*padding-bottom: 10px;*/
 }
 
-#buttonSpace{
-	width: 100px;
-	text-align: center;
-	margin-left: -15px;
-	margin-top: -10px;
+/*#colorPalette {
+  font-size: 2em;
+}*/
+
+#colorPalette,
+#sizePlus,
+#sizeMinus,
+#selectEraser,
+#resetCanvas {
+  font-size: 2em;
 }
 
-#canvasSpace{
-	width:500px;
-	margin-bottom:1em;
+/* Main marketing message and sign up button */
+/*#canvasSpace,*/
+.container
+{
+  text-align: center;
+  width: 730px;
+  max-width: 730px;
+  padding-left: 0px;
+  padding-right: 0px;
+  /*margin-left: auto;*/
+  /*margin-right: auto;*/
+  /*text-align: center;*/
+  /*background-color: white;*/
+  /*padding-top: 0px;*/
+  /*padding-bottom: 0px;*/
+  /*padding-right: 0px;*/
+  /*padding-left: 0px;*/
+  /*border-radius: 0px;*/
+  /*margin-top: 0px;*/
+  /*margin-bottom: 0px;*/
+  /*margin-left: 0px;*/
+  /*margin-right: 0px;*/
+  /*float:none;*/
+  /*display:inline-block;*/
+  /*vertical-align:middle;*/
 }
 
-#canvas{
-	float: left;
+.canvas {
+
 }
 
-#chatSpace, #messagesSpace, #textEntrySpace{
-	width: 250px;
-	border-radius: 25px;
+.row-centered {
+    text-align:center;
+}
+.col-centered {
+    display:inline-block;
+    float:none;
+    /* reset the text-align */
+    text-align:left;
+    /* inline-block space fix */
+    margin-right:-4px;
 }
 
-#chatSpace, #userlistSpace, #paletteSpace{
-	height: 490px;
-	float: left;
+/* Supporting marketing content */
+/*.marketing {
+  margin: 40px 0;
 }
+.marketing p + h4 {
+  margin-top: 28px;
+}*/
 
-#messagesSpace{
-	background: #dddddd;
-	height: 400px;
-	border: 2px solid #a1a1a1;
-	padding-left: 5px;
-	overflow-y: scroll;
-	overflow-x: wrap;
-	word-wrap: break-word;
-}
-
-#textEntrySpace{
-	background: #dddddd;
-	height: 90px;
-	border: 2px solid #a1a1a1;
-	position: relative;
-}
-
-#userlistSpace{
-	background: #dddddd;
-	width: 100px;
-	border-radius: 25px;
-	border: 2px solid #a1a1a1;
-	text-align:center;
-}
-
-#paletteSpace, #canvasSpace, #chatSpace{
-	margin-right:1em;
-	float: left;
-}
-
-#inputBox{
-	position: relative;
-	top:10px;
-	resize: none;
-	background-color: transparent;
-	border: 0;
-	outline: none;
-	outline-offset: 0;
-	text-align:center;
-}
-
-#paletteSpace{
-	width: 60px;
-	margin-left: 1em;
-}
-
-.colorSpace{
-	height: 40px;
-	width: 40px;
-	border-radius: 25px;
-	border: 2px solid #a1a1a1;
-	margin-bottom: 2em;
-}
-
-.brushSpace{
-	border: 2px solid #a1a1a1;
-	float: left;
-	margin-top: 1.5em;
-	margin-right: 1em;
-	margin-left: 3em;
-}
+/* Responsive: Portrait tablets and up */
+/*@media screen and (min-width: 768px) {*/
+  /* Remove the padding we set earlier */
+  /*.header,
+  .marketing,
+  .footer {
+    padding-right: 0;
+    padding-left: 0;
+    width: 100%;
+  }*/
+  /* Space out the masthead */
+  /*.header {
+    margin-bottom: 30px;
+    margin-bottom: 10px;
+  }*/
+  /* Remove the bottom border on the jumbotron for visual effect */
+  /*.jumbotron {
+    border-bottom: 0;
+    width:auto;
+  }*/
+/*}*/

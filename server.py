@@ -47,7 +47,7 @@ class PaintProtocol(WebSocketServerProtocol):
             elif header == 'CHAT':
                 user = self.factory.CLIENTS[self]
                 data = data.replace('CHAT:','CHAT:'+user+': ', 1)
-            self.factory.updateClients(data)
+            self.factory.updateAll(data)
         else:
             self.sendMessage('DENIED:unregistered user')
 
@@ -83,10 +83,10 @@ class PaintFactory(WebSocketServerFactory):
     # @param:       client - the cient to add to the client dictionary
     def newUser(self, client, username):
         if client in self.CLIENTS:
+            self.updateAllExcept(client, 'INFO:'+username+' has joined')
+            self.updateAll('USERS:'+str(len(self.USERNAMES)))
             self.CLIENTS[client] = username
-            print "registered client " + username
-            self.updateClients('INFO:'+username+' has joined')
-            self.updateClients('USERS:'+str(len(self.USERNAMES)))
+            print "registered client "+username
         else:
             print "unrecognized client"
 
@@ -94,29 +94,36 @@ class PaintFactory(WebSocketServerFactory):
     # @description: removes client to list of connection
     # @param:       client - the cient to remove from the client dictionary
     def unregister(self, client):
-        print "unregistering"
-        print "self.CLIENTS:"
-        print self.CLIENTS
-        print "self.USERNAMES"
-        print self.USERNAMES
+        # print "unregistering"
+        # print "self.CLIENTS:"
+        # print self.CLIENTS
+        # print "self.USERNAMES"
+        # print self.USERNAMES
         if client in self.CLIENTS:
             username = self.CLIENTS[client]
             del self.CLIENTS[client]
             u = username.split("(")[0]
-            self.USERNAMES[u]-=1
-            if self.USERNAMES[u] == 0:
+            self.USERNAMES[u][0]-=1
+            if self.USERNAMES[u][0] <= 0:
                 del self.USERNAMES[u]
             print "unregistered connection "+client.peer+" ("+username+")"
-            self.updateClients('INFO:'+username+' has left')
-            self.updateClients('USERS:'+str(len(self.CLIENTS)))
+            self.updateAll('INFO:'+username+' has left')
+            self.updateAll('USERS:'+str(len(self.CLIENTS)))
 
     # @function: updateClients
     # @description: updates all clients with the given message
     # @param: msg - the message to send to the clients
-    def updateClients(self, msg):
+    # def updateClients(self, msg):
+    def updateAll(self, msg):
         for c in self.CLIENTS:
             c.sendMessage(msg)
             print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
+
+    def updateAllExcept(self, client, msg):
+        for c in self.CLIENTS:
+            if c != client:
+                c.sendMessage(msg)
+                print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
 
     # @function: checkName
     # @description: Checks that a client's requested username is valid.
@@ -134,17 +141,15 @@ class PaintFactory(WebSocketServerFactory):
             client.sendMessage('DENIED:username must have at least one alphanumeric char')
         elif username == 'null' or username == 'undefined':
             client.sendMessage('DENIED:username cannot be null or undefined')
-        # elif username.lower() in [x.lower() for x in self.CLIENTS.values()]:
-        #     client.sendMessage('DENIED:username in use')
         else:
-            # if username.lower() in [x.lower() for x in self.CLIENTS.values()]:
             username = username.lower()
             if username in self.USERNAMES:
                 print "duplicate name"
-                self.USERNAMES[username]+= 1
-                username+="("+str(self.USERNAMES[username])+")"
+                self.USERNAMES[username][0]+= 1
+                self.USERNAMES[username][1]+= 1
+                username+="("+str(self.USERNAMES[username][1])+")"
             else:
-                self.USERNAMES[username] = 1
+                self.USERNAMES[username] = [1,1]
             self.newUser(client, username)
             client.sendMessage('ACCEPTED:'+username)
 
