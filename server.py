@@ -102,7 +102,6 @@ class PaintFactory(WebSocketServerFactory):
     # @function: updateAll
     # @description: updates all clients with the given message
     # @param: msg - the message to send to the clients
-    # def updateClients(self, msg):
     def updateAll(self, msg):
         for c in self.CLIENTS:
             c.sendMessage(msg)
@@ -118,7 +117,6 @@ class PaintFactory(WebSocketServerFactory):
     # @description: Checks that a client's requested username is valid.
     # @param: client - the client requesting a username
     # @param: username - the requested username.
-    # def checkName(self, client, username):
     def checkName(self, client, data):
         username = data.lower()
         problems = []
@@ -136,7 +134,6 @@ class PaintFactory(WebSocketServerFactory):
                 msg+=p
             client.sendMessage(msg)
         else:
-            # username = username.lower()
             if username in self.USERNAMES:
                 print "duplicate name"
                 self.USERNAMES[username][0]+= 1
@@ -150,14 +147,11 @@ class PaintFactory(WebSocketServerFactory):
     # @function: updateBuffer
     # @description: Update the paintbuffer with a paint message
     # @param: msg - the paint message to use
-    # def updateBuffer(self, msg):
     def updateBuffer(self, client, data):
         print 'updating paint buffer'
         self.PAINTBUFFER.append(data)
         self.updateAll('PAINT:'+data)
 
-    # def resetBuffer(self, client):
-    # def resetBuffer(self, client, data):
     def resetBuffer(self, client, *_):
         print 'clearing paint buffer'
         self.PAINTBUFFER = []
