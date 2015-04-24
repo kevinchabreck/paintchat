@@ -9,8 +9,6 @@ from twisted.internet import reactor
 from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 import json
 
-clicks = 0;
-
 # @class:       PaintProtocol
 # @description: a protocol with event handlers for opening connections, closing
 #               connections, and recieving messages from clients. Required by
