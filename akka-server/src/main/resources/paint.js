@@ -169,19 +169,15 @@ function init(container, width, height) {
     function changeColor(e, color) {
         canvas.isErasing = false;
         fillColor = color;
-        // alert("color > 0xffffff/2: "+(parseInt(color) > (0xffffff/2))+" (true = dark bg. false = light bg)");
         $("#colorPalette").css("color", color);
-        // $("#colorPalette").css("background-color", "red");
         $("#colorPalette").spectrum("hide");
-        // var rgb = color.split("(")[1].split(")")[0].split(",");
-        // if (hexdec($hexcolor) > 0xffffff/2) ? $dark : $light;
     }
 
     function incSize(e){
         if (linewidth < 40){
             linewidth+=4;
             // $("#colorPalette").css('font-size',"+=1");
-            $("#colorPalette").animate({fontSize:"+=1"});
+            // $("#colorPalette").animate({fontSize:"+=1"});
         }
     }
 
@@ -189,13 +185,12 @@ function init(container, width, height) {
         if (linewidth > 4){
             linewidth-=4;
             // $("#colorPalette").css('font-size',"-=1");
-            $("#colorPalette").animate({fontSize:"-=1"});
+            // $("#colorPalette").animate({fontSize:"-=1"});
         }
     }
 
     function startErase(e){
         canvas.isErasing = true;
-        // console.log("canvas.isErasing: "+canvas.isErasing);
     }
 
     $('#canvas').on('mousemove touchmove', draw);
@@ -266,15 +261,16 @@ function init(container, width, height) {
     function info(e) {
         var info = e.data.replace('INFO:','');
         alertify.log("user "+info);
-        // var msg = e.data.replace('INFO:','');
-        // msg = '<i>'+msg+'</i>';
-        // var messageSpace = document.getElementById("messagesSpace");
-        // messageSpace.innerHTML += msg + '</br></br>';
-        // messageSpace.scrollTop = messageSpace.scrollHeight;
-        // messageSpace.focus();
     }
 
     function reset(e) {
+        var username = e.data.replace('RESET:','');
+        alertify.log("user "+username+" has reset the drawing board!");
+        ctx.clear();
+    }
+
+    function selfreset(e) {
+        alertify.log("You have reset the drawing board!");
         ctx.clear();
     }
 
@@ -291,9 +287,9 @@ function init(container, width, height) {
     }
 
     function denied(e) {
-        // var reason = e.data.replace('DENIED:','');
+        var reason = e.data.replace('DENIED:','');
         var msg = "Unable to connect with that username! ";
-        msg +=    "Reason: "+e.data.replace('DENIED:','')+". ";
+        msg +=    "Reason: "+reason+". ";
         msg +=    "Enter new username";
         alertify.prompt(msg, function (e, username) {
             if (e) {
@@ -373,6 +369,7 @@ function init(container, width, height) {
             'CHAT': chat,
             'INFO': info,
             'RESET': reset,
+            'SRESET': selfreset,
             'ACCEPTED': accepted,
             'DENIED': denied,
             'PAINTBUFFER': paintbuffer,

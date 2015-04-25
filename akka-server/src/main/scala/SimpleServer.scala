@@ -47,35 +47,37 @@ object SimpleServer extends App with MySslConfiguration {
   class WebSocketServer extends Actor with ActorLogging {
 
     // import context.dispatcher
-    // val connectedClients:collection.mutable.Set[ActorRef] = Set()
-    // val clients = collection.mutable.Set[ActorRef]()
     val clients = collection.mutable.Map[ActorRef, String]()
+    val paintbuffer = collection.mutable.ListBuffer[String]()
 
     def receive = {
       // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
       case Http.Connected(remoteAddress, localAddress) =>
         println("new connection "+remoteAddress+" - creating new actor")
-        val serverConnection = sender()
-        val conn = context.actorOf(WebSocketWorker.props(serverConnection, self))
-        serverConnection ! Http.Register(conn)
-        // clients += conn
+        // val serverConnection = sender()
+        // val conn = context.actorOf(WebSocketWorker.props(serverConnection, self))
+        // serverConnection ! Http.Register(conn)
+        val conn = context.actorOf(WebSocketWorker.props(sender(), self))
+        sender() ! Http.Register(conn)
         clients(conn) = ""
 
       case msg: TextFrame =>
         val _ = msg.payload.utf8String.split(":",2).toList match {
           case "PAINT"::data =>
-            println("[SERVER] recieved PAINT message")
+            // println("[SERVER] recieved PAINT message")
             println("[SERVER] broadcasting: "+msg.payload.utf8String)
-            // clients.foreach(_.forward(ForwardFrame(msg)))
+            paintbuffer += msg.payload.utf8String
             clients.keys.foreach(_.forward(ForwardFrame(msg)))
-            // clients.foreach{ case (client, _) => client.forward(ForwardFrame(msg))}
           // case "GETBUFFER"::_ =>
           case "USERNAME"::username::_ =>
-            println("[SERVER] recieved USERNAME message")
             println("[SERVER] new user: "+username)
+            clients(sender()) = username
             sender() ! Push("ACCEPTED:"+username)
             clients.keys.filter(_ != sender()).foreach(_ ! Push("INFO:"+username+" has joined"))
-          // case "RESET":: =>
+          case "RESET"::_ =>
+            sender() ! Push("SRESET:")
+            clients.keys.filter(_ != sender()).foreach(_ ! Push("RESET:"+clients(sender())))
+
           // case "CHAT":: =>
           case _ =>
             println("[SERVER] recieved unrecognized message: "+msg.payload.utf8String)
@@ -85,10 +87,8 @@ object SimpleServer extends App with MySslConfiguration {
         println("[SERVER] registered ConnectionClosed event from "+sender())
         clients -= sender()
 
-
       case x =>
-        println("Server recieved something other than a new Http connection (maybe a Registered??)")
-        println("x: "+x)
+        println("[SERVER] recieved unknown message: "+x)
     }
 
   }
@@ -115,29 +115,27 @@ object SimpleServer extends App with MySslConfiguration {
 
       // recieve text frame from client>
       case msg: TextFrame =>
-        val m = msg.payload.utf8String
-        println("[WORKER(path = "+self.path+")] recieved textframe: ["+m+"] from "+sender())
-        // println("sending ["+m+"] to 'sender()':"+sender())
-        // sender() ! msg
-        println("sending frame to parent")
+        // val m = msg.payload.utf8String
+        // println("[WORKER(path = "+self.path+")] recieved textframe: ["+m+"] from "+sender())
+        // println("sending frame to parent")
         parent ! msg
 
       case ForwardFrame(f) =>
-        println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
-        println("sender: "+sender())
+        // println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
+        // println("sender: "+sender())
         send(f)
 
       case Push(msg) =>
-        println("[WORKER] recieved a Push: "+msg)
-        println("sender: "+sender())
+        // println("[WORKER] recieved a Push: "+msg)
+        // println("sender: "+sender())
         send(TextFrame(msg))
 
       case x: FrameCommandFailed =>
-        log.error("frame command failed", x)
+        // log.error("frame command failed", x)
 
       // should never happen... right?
       case x: HttpRequest =>
-        println("[WORKER] got an http request: "+x)
+        // println("[WORKER] got an http request: "+x)
 
       // onClose
       case x: ConnectionClosed =>
@@ -146,20 +144,19 @@ object SimpleServer extends App with MySslConfiguration {
         context.stop(self)
 
       case ConfirmedClosed =>
-        println("[WORKER] connection CONFIRMED closed")
+        // println("[WORKER] connection CONFIRMED closed")
 
       case websocket.UpgradedToWebSocket =>
-        println("[WORKER] upgraded to websocket - sender(): "+sender())
+        // println("[WORKER] upgraded to websocket - sender(): "+sender())
 
       case x =>
-        println("[WORKER] unknown message... (maybe CONFIRMED closed??): "+x)
+        println("[WORKER] recieved unknown message: "+x)
     }
 
     def businessLogicNoUpgrade: Receive = {
       implicit val refFactory: ActorRefFactory = context
       runRoute {
-        println("running route")
-        getFromDirectory("resources")
+        getFromResourceDirectory(".")
       }
     }
   }
