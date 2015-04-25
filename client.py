@@ -15,15 +15,28 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
     message every 2 seconds and print everything it receives.
     """
 
-    # def __init__(self):
-    #     # super(WebSocketClientProtocol, self).setTrackTimings(True)
-    #     self.setTrackTimings(True)
+    def __init__(self):
+        super(BroadcastClientProtocol, self).__init__()
+        self.setTrackTimings(True)
+        self.trackTimings = True
+        self.msgId = 0
+        self.interval = 0.5
+        self.record = []
 
     def sendHello(self):
-        self.sendMessage("PAINT:" + str(clients[self])+" 285 249 285 6 black".encode('utf8'))
-        reactor.callLater(2, self.sendHello)
+
+        if self.msgId < 3:
+            self.sendMessage("PAINT:" + str(clients[self])+" 285 249 285 6 black".encode('utf8'))
+            reactor.callLater(self.interval, self.sendHello)
+            self.msgId = self.msgId + 1
+        else:
+            print "Client ", clients[self], " Finished Sending Messages.\nResults:"
+            for s in self.record:
+                print s
+            print "\n****************** Client ", clients[self], " Done ******************\n"
 
     def onOpen(self):
+        self.trackedTimings = Timings()
         self.sendMessage("GETBUFFER:")
         global counter
         # print "*************counter is now: ", counter, " ***********"
@@ -33,10 +46,16 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         counter = counter + 1
         self.sendHello()
 
+
     def onMessage(self, payload, isBinary):
         # if not isBinary:
-        self.trackedTimings.diff("sendMessage", "onMessage", format=True)
-        print("Text message received: {}".format(payload.decode('utf8')))
+        header = "Client " +  str(clients[self]) +"\n"
+        timerecord = str(self.trackedTimings) + "\n"
+        payload = payload.decode('utf8')
+        record = header + timerecord + payload
+
+        self.record.append(record)
+
 
 
 if __name__ == '__main__':
@@ -47,7 +66,7 @@ if __name__ == '__main__':
 
     # clients = {}
 
-    for i in range(1):
+    for i in range(2):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
@@ -58,7 +77,9 @@ if __name__ == '__main__':
 
         f = WebSocketClientFactory("ws://localhost:9001")
         f.protocol = BroadcastClientProtocol
-        f.trackTimings=True
         connectWS(f)
+        # f2 = WebSocketClientFactory("ws://localhost:9001")
+        # f2.protocol = BroadcastClientProtocol
+        # connectWS(f2)
 
     reactor.run()
