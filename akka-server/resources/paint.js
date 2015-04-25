@@ -333,7 +333,8 @@ function init(container, width, height) {
     }
 
     // determine websocket URI
-    var port = "9001"
+    // var port = "9001"
+    var port = "8080"
     var wsuri;
     if (window.location.protocol === "file:") {
        wsuri = "ws://localhost:"+port;
