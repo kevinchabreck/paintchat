@@ -1,13 +1,16 @@
 
 
-import xlsxwriter
+import xlsxwriter, os
 
-num_client = 50
+num_client = 2
 all_clients = []
 
 
+cd = os.getcwd()
+path  = cd + "/temp/"
+
 for i in range(num_client):
-	f = open('client'+str(i)+'.txt','r')
+	f = open(path + 'client'+str(i)+'.txt','r')
 	entries = []
 
 	l = f.readline()
@@ -61,7 +64,7 @@ for i in range(num_client):
 
 
 for i in range(num_client):
-	f = open('client'+str(i)+'.txt','r')
+	f = open(path + 'client'+str(i)+'.txt','r')
 	l = f.readline()
 
 

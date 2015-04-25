@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from twisted.internet import reactor
 from autobahn.twisted.websocket import WebSocketClientFactory, \
     WebSocketClientProtocol, \
@@ -25,13 +25,18 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
 
     def sendHello(self):
 
-        if self.msgId < 50:
+        if self.msgId < 2:
             self.sendMessage("PAINT:" + str(clients[self])+" "+ str(self.msgId)+ " " + "249 285 6 black".encode('utf8'))
             reactor.callLater(self.interval, self.sendHello)
             self.msgId = self.msgId + 1
         else:
             # print "Client ", clients[self], " Finished Sending Messages.\nResults:"
-            f = open('client'+str(clients[self])+".txt", 'w')
+            cd = os.getcwd()
+            path  = cd + "/temp"
+            if not os.path.exists(path):
+                os.mkdir(path)
+            
+            f = open(cd + '/temp/client'+str(clients[self])+".txt", 'w')
             for s in self.record:
                 f.write(s)
             print "\n****************** Client ", clients[self], " Done ******************\n"
@@ -68,7 +73,7 @@ if __name__ == '__main__':
 
     # clients = {}
 
-    for i in range(50):
+    for i in range(2):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
