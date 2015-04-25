@@ -19,7 +19,7 @@ class PaintProtocol(WebSocketServerProtocol):
     # @function:    onOpen
     # @description: handles the event of establishing a new connection
     def onOpen(self):
-        print "new connection: "+self.peer
+        # print "new connection: "+self.peer
         self.factory.registerConnection(self)
 
     # @function:    connectionLost
@@ -29,7 +29,7 @@ class PaintProtocol(WebSocketServerProtocol):
         self.factory.unregister(self)
 
     def onMessage(self, data, binary):
-        print "recieved <"+data+"> from "+self.peer+" ("+factory.CLIENTS[self]+")"
+        # print "recieved <"+data+"> from "+self.peer+" ("+factory.CLIENTS[self]+")"
         (header, _, msg) = data.partition(':')
         if header in self.factory.handlers:
             self.factory.handlers[header](self, msg)
@@ -65,10 +65,10 @@ class PaintFactory(WebSocketServerFactory):
     # @param:       client - the cient to add to the connections list
     def registerConnection(self, client):
         if client not in self.CLIENTS:
-            print 'registered connection '+client.peer
+            # print 'registered connection '+client.peer
             self.CLIENTS[client] = ''
-        else:
-            print 'unable to register connection'
+        # else:
+            # print 'unable to register connection'
 
     # @function:    registerClient
     # @description: adds client to list of connection
@@ -76,11 +76,11 @@ class PaintFactory(WebSocketServerFactory):
     def newUser(self, client, username):
         if client in self.CLIENTS:
             self.updateAllExcept(client, 'INFO:'+username+' has joined')
-            self.updateAll('USERS:'+str(len(self.USERNAMES)))
+            # self.updateAll('USERS:'+str(len(self.USERNAMES)))
             self.CLIENTS[client] = username
-            print "registered client "+username
-        else:
-            print "unrecognized client"
+            # print "registered client "+username
+        # else:
+            # print "unrecognized client"
 
     # @function:    unregister
     # @description: removes client to list of connection
@@ -93,9 +93,9 @@ class PaintFactory(WebSocketServerFactory):
             self.USERNAMES[u][0]-=1
             if self.USERNAMES[u][0] <= 0:
                 del self.USERNAMES[u]
-            print "unregistered connection "+client.peer+" ("+username+")"
+            # print "unregistered connection "+client.peer+" ("+username+")"
             self.updateAll('INFO:'+username+' has left')
-            self.updateAll('USERS:'+str(len(self.CLIENTS)))
+            # self.updateAll('USERS:'+str(len(self.CLIENTS)))
 
     # @function: updateAll
     # @description: updates all clients with the given message
@@ -103,13 +103,13 @@ class PaintFactory(WebSocketServerFactory):
     def updateAll(self, msg):
         for c in self.CLIENTS:
             c.sendMessage(msg)
-            print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
+            # print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
 
     def updateAllExcept(self, client, msg):
         for c in self.CLIENTS:
             if c != client:
                 c.sendMessage(msg)
-                print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
+                # print "update <"+msg+"> sent to "+c.peer+" ("+self.CLIENTS[c]+")"
 
     # @function: checkName
     # @description: Checks that a client's requested username is valid.
@@ -133,7 +133,7 @@ class PaintFactory(WebSocketServerFactory):
             client.sendMessage(msg)
         else:
             if username in self.USERNAMES:
-                print "duplicate name"
+                # print "duplicate name"
                 self.USERNAMES[username][0]+= 1
                 self.USERNAMES[username][1]+= 1
                 username+="("+str(self.USERNAMES[username][1])+")"
@@ -146,12 +146,12 @@ class PaintFactory(WebSocketServerFactory):
     # @description: Update the paintbuffer with a paint message
     # @param: msg - the paint message to use
     def updateBuffer(self, client, data):
-        print 'updating paint buffer'
+        # print 'updating paint buffer'
         self.PAINTBUFFER.append(data)
         self.updateAll('PAINT:'+data)
 
     def resetBuffer(self, client, *_):
-        print 'clearing paint buffer'
+        # print 'clearing paint buffer'
         self.PAINTBUFFER = []
         self.updateAll("RESET:"+self.CLIENTS[client])
 
@@ -159,11 +159,11 @@ class PaintFactory(WebSocketServerFactory):
     # @description: Sends the history of paint commands to a client.
     # @param: client - the client to send the paint buffer to.
     def sendBuffer(self, client, *_):
-        print 'sending paint buffer to '+client.peer
+        # print 'sending paint buffer to '+client.peer
         client.sendMessage('PAINTBUFFER:' + json.dumps(self.PAINTBUFFER))
 
     def sendChat(self, client, data):
-        print 'recieved chat: '+data
+        # print 'recieved chat: '+data
         user = self.CLIENTS[client]
         self.updateAll('CHAT:'+user+': '+data)
 

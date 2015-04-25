@@ -20,20 +20,22 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         self.setTrackTimings(True)
         self.trackTimings = True
         self.msgId = 0
-        self.interval = 0.5
+        self.interval = 1
         self.record = []
 
     def sendHello(self):
 
-        if self.msgId < 3:
-            self.sendMessage("PAINT:" + str(clients[self])+" 285 249 285 6 black".encode('utf8'))
+        if self.msgId < 50:
+            self.sendMessage("PAINT:" + str(clients[self])+" "+ str(self.msgId)+ " " + "249 285 6 black".encode('utf8'))
             reactor.callLater(self.interval, self.sendHello)
             self.msgId = self.msgId + 1
         else:
-            print "Client ", clients[self], " Finished Sending Messages.\nResults:"
+            # print "Client ", clients[self], " Finished Sending Messages.\nResults:"
+            f = open('client'+str(clients[self])+".txt", 'w')
             for s in self.record:
-                print s
+                f.write(s)
             print "\n****************** Client ", clients[self], " Done ******************\n"
+            f.close()
 
     def onOpen(self):
         self.trackedTimings = Timings()
@@ -49,11 +51,11 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
 
     def onMessage(self, payload, isBinary):
         # if not isBinary:
-        header = "Client " +  str(clients[self]) +"\n"
+        # header = "#Client " +  str(clients[self]) +"\n"
         timerecord = str(self.trackedTimings) + "\n"
-        payload = payload.decode('utf8')
-        record = header + timerecord + payload
-
+        payload = payload.decode('utf8') + "\n"
+        record = payload + timerecord
+        # print record
         self.record.append(record)
 
 
@@ -66,7 +68,7 @@ if __name__ == '__main__':
 
     # clients = {}
 
-    for i in range(2):
+    for i in range(50):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
