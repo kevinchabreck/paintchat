@@ -2,7 +2,7 @@
 
 import xlsxwriter, os
 
-num_client = 2
+num_client = 100
 all_clients = []
 
 
@@ -60,7 +60,9 @@ for i in range(num_client):
 
 	all_clients.insert(i, entries)
 
-
+for i in range(num_client):
+	print '#client ', i
+	print all_clients[i]
 
 
 for i in range(num_client):
@@ -113,7 +115,7 @@ for i in range(num_client):
 
 	row = 0
 	col = 0
-	
+
 	worksheet = workbook.add_worksheet('client' + str(i))
 	data = all_clients[i]
 	worksheet.write(row, col, 'Message Number', bold)

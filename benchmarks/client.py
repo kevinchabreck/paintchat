@@ -25,7 +25,7 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
 
     def sendHello(self):
 
-        if self.msgId < 2:
+        if self.msgId < 5:
             self.sendMessage("PAINT:" + str(clients[self])+" "+ str(self.msgId)+ " " + "249 285 6 black".encode('utf8'))
             reactor.callLater(self.interval, self.sendHello)
             self.msgId = self.msgId + 1
@@ -35,7 +35,7 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
             path  = cd + "/temp"
             if not os.path.exists(path):
                 os.mkdir(path)
-            
+
             f = open(cd + '/temp/client'+str(clients[self])+".txt", 'w')
             for s in self.record:
                 f.write(s)
@@ -64,7 +64,6 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         self.record.append(record)
 
 
-
 if __name__ == '__main__':
 
     # if len(sys.argv) < 2:
@@ -73,7 +72,7 @@ if __name__ == '__main__':
 
     # clients = {}
 
-    for i in range(2):
+    for i in range(100):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
@@ -81,8 +80,8 @@ if __name__ == '__main__':
         # f.protocol = BroadcastClientProtocol
         # clients[f.protocol] = i
         # connectWS(f)
-
-        f = WebSocketClientFactory("ws://localhost:9001")
+        port = "8080"
+        f = WebSocketClientFactory("ws://localhost:"+port)
         f.protocol = BroadcastClientProtocol
         connectWS(f)
         # f2 = WebSocketClientFactory("ws://localhost:9001")
