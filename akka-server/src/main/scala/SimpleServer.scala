@@ -62,7 +62,7 @@ object SimpleServer extends App with MySslConfiguration {
 
       case UpgradedToWebSocket =>
         clients(sender()) = ""
-        print("connected clients: "+clients.size+"                    \r")
+        // print("connected clients: "+clients.size+"                    \r")
 
       case msg: TextFrame =>
         val _ = msg.payload.utf8String.split(":",2).toList match {
@@ -93,11 +93,11 @@ object SimpleServer extends App with MySslConfiguration {
 
       case x: ConnectionClosed =>
         clients -= sender()
-        print("connected clients: "+clients.size+"                    \r")
+        // print("connected clients: "+clients.size+"                    \r")
 
       case x: Terminated =>
         clients -=(sender())
-        print("connected clients: "+clients.size+"                    \r")
+        // print("connected clients: "+clients.size+"                    \r")
 
       case x =>
         println("[SERVER] recieved unknown message: "+x)
@@ -114,14 +114,16 @@ object SimpleServer extends App with MySslConfiguration {
     override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
     // val server = self.getContext().parent
-    var handshakes = 0
+    // var handshakes = 0
 
     def businessLogic: Receive = {
 
-      // recieve binary frame from client
-      case x @ (_: BinaryFrame) => sender() ! x
+      case x @ (_: BinaryFrame | _: TextFrame) =>
+        sender() ! x
 
-      // recieve text frame from client>
+      // case x @ (_: BinaryFrame) =>
+      //   sender() ! x
+
       case msg: TextFrame =>
         // val m = msg.payload.utf8String
         // println("sending frame to parent")
@@ -147,7 +149,7 @@ object SimpleServer extends App with MySslConfiguration {
       // onClose
       case x: ConnectionClosed =>
         // println("[WORKER] connection closing...")
-        parent ! x
+        // parent ! x
         context.stop(self)
 
       case ConfirmedClosed =>
@@ -155,7 +157,7 @@ object SimpleServer extends App with MySslConfiguration {
 
       case UpgradedToWebSocket =>
         // println("[WORKER] upgraded to websocket - sender(): "+sender())
-        parent forward UpgradedToWebSocket
+        // parent forward UpgradedToWebSocket
 
       case x =>
         println("[WORKER] recieved unknown message: "+x)
