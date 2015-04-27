@@ -135,7 +135,8 @@ function init(container, width, height) {
     }
 
     function start(e) {
-        if(e.target.id=="chatInput"){
+        var id = e.target.id
+        if((id=="chatInput")||(id=="sendChatButton")){
 
         } else{
             e.preventDefault();
@@ -198,6 +199,7 @@ function init(container, width, height) {
 
     function toggleChat(e){
         $('#chatSpace').slideToggle("fast");
+        $('#chatInput').focus();
     }
 
     function sendChat(e){
@@ -205,13 +207,14 @@ function init(container, width, height) {
         if((e.type == "click") || $('#chatInput').is(':focus')){
             msg = 'CHAT:' + $('#chatInput').val();
             ws.send(msg);
+            alertify.log("Me: "+$('#chatInput').val());
             $('#chatInput').val("");
         }
     }
 
     function keypress(e){
         if(e.which == 114){ // "r"
-            sendReset(e);
+            // sendReset(e);
         } else if(e.which == 13) { // "enter"
             sendChat(e);
         }
@@ -242,6 +245,7 @@ function init(container, width, height) {
     $(document).on('keypress', keypress);
 
     $("#colorPalette").on('change.spectrum', changeColor);
+    $("#sendChatButton").on("click", sendChat);
 
     $('.btn-group [title]').tooltip({
       container: 'body',

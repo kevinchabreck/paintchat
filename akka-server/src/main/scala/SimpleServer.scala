@@ -89,7 +89,8 @@ object SimpleServer extends App with MySslConfiguration {
           case "CHAT"::message::_ =>
             // clients(sender()) = username
             val m = "CHAT:"+clients(sender())+":"+message
-            println("broadcasting chat: "+m)
+            // println("broadcasting chat: "+m)
+            // sender() ! Push("CHAT:"+clients(sender())+":"+message)
             clients.keys.filter(_ != sender()).foreach(_ ! Push(m))
 
           case _ =>
