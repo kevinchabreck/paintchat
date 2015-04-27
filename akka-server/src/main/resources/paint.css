@@ -47,23 +47,38 @@ body {
   }
 }*/
 
-#toolSpace,
-#chatSpace {
+#toolSpace {
+  /*padding-top: 20px;*/
   padding-top: 10px;
   /*padding-bottom: 10px;*/
 }
 
 #chatspace {
+  /*margin-top: 50px;*/
+}
 
+#canvasPanelBody {
+  /*margin: 0px;*/
+  padding: 0px;
+}
+
+#canvasPanel {
+  margin-bottom: 0px;
+  width: auto;
+  height: auto;
+  overflow: hidden;
+  text-align: center;
+  max-height: 394px;
+  margin-bottom: 15px;
 }
 
 #canvasSpace {
-  padding-top: 10px;
+  /*padding-top: 10px;*/
   /*padding-bottom: 10px;*/
 }
 
 .canvas {
-  border:1px solid #000000;
+  /*border:1px solid #000000;*/
 }
 
 /*#colorPalette {
@@ -100,8 +115,9 @@ body {
 .container
 {
   text-align: center;
-  width: 730px;
-  max-width: 730px;
+  /*width: 730px;*/
+  /*max-width: 730px;*/
+  max-width: 700px;
   padding-left: 0px;
   padding-right: 0px;
   /*margin-left: auto;*/
