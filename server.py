@@ -61,7 +61,7 @@ class PaintFactory(WebSocketServerFactory):
             'GETBUFFER':self.sendBuffer,
             'USERNAME':self.checkName,
             'PAINT':self.updateBuffer,
-            '   ':self.resetBuffer,
+            'RESET':self.resetBuffer,
             'CHAT':self.sendChat
         }
         self.c=0
