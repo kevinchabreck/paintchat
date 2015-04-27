@@ -1,8 +1,8 @@
 
 /* Space out content a bit */
 body {
-  padding-top: 20px;
-  padding-bottom: 20px;
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 /* Everything but the jumbotron gets side spacing for mobile first views */
@@ -15,14 +15,15 @@ body {
 
 /* Custom page header */
 .header {
-  padding-bottom: 20px;
+  /*padding-bottom: 20px;*/
+  padding-bottom: 10px;
   /*border-bottom: 1px solid #e5e5e5;*/
 }
 
 /* Custom page footer */
 .footer {
   text-align: center;
-  margin-top: 15px;
+  margin-top: 10px;
   padding-top: 19px;
   color: #777;
   /*border-top: 1px solid #e5e5e5;*/
@@ -46,26 +47,52 @@ body {
   }
 }*/
 
-#toolSpace {
+#toolSpace,
+#chatSpace {
   padding-top: 10px;
   /*padding-bottom: 10px;*/
 }
 
+#chatspace {
+
+}
+
 #canvasSpace {
-  padding-top: 20px;
+  padding-top: 10px;
   /*padding-bottom: 10px;*/
+}
+
+.canvas {
+  border:1px solid #000000;
 }
 
 /*#colorPalette {
   font-size: 2em;
 }*/
 
+/*.panel {
+  padding: 0px;
+  margin: 0px;
+}*/
+
 #colorPalette,
 #sizePlus,
 #sizeMinus,
 #selectEraser,
+#selectChat,
 #resetCanvas {
+  vertical-align: middle;
   font-size: 2em;
+}
+
+.toolbutton {
+  padding-top: 0px;
+  vertical-align: middle;
+}
+
+.tool {
+  padding-top: 0px;
+  vertical-align: middle;
 }
 
 /* Main marketing message and sign up button */

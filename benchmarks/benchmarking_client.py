@@ -20,12 +20,12 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         self.setTrackTimings(True)
         self.trackTimings = True
         self.msgId = 0
-        self.interval = 1
+        self.interval = 0.1
         self.record = []
 
     def sendHello(self):
 
-        if self.msgId < 5:
+        if self.msgId < 100:
             self.sendMessage("PAINT:" + str(clients[self])+" "+ str(self.msgId)+ " " + "249 285 6 black".encode('utf8'))
             reactor.callLater(self.interval, self.sendHello)
             self.msgId = self.msgId + 1

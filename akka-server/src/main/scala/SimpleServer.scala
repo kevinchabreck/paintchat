@@ -15,11 +15,12 @@ import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
 
-case class ForwardFrame(frame: Frame)
+// case class ForwardFrame(frame: Frame)
 
 object SimpleServer extends App with MySslConfiguration {
 
   final case class Push(msg: String)
+  case class ForwardFrame(frame: Frame)
 
   // class ClientRouter extends Actor {
   //   var router = {
@@ -62,7 +63,7 @@ object SimpleServer extends App with MySslConfiguration {
 
       case UpgradedToWebSocket =>
         clients(sender()) = ""
-        // print("connected clients: "+clients.size+"                    \r")
+        print("connected clients: "+clients.size+"                    \r")
 
       case msg: TextFrame =>
         val _ = msg.payload.utf8String.split(":",2).toList match {
@@ -85,7 +86,11 @@ object SimpleServer extends App with MySslConfiguration {
             clients.keys.filter(_ != sender()).foreach(_ ! Push("RESET:"+clients(sender())))
             paintbuffer.clear()
 
-          case "CHAT"::_ =>
+          case "CHAT"::message::_ =>
+            // clients(sender()) = username
+            val m = "CHAT:"+clients(sender())+":"+message
+            println("broadcasting chat: "+m)
+            clients.keys.filter(_ != sender()).foreach(_ ! Push(m))
 
           case _ =>
             println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
@@ -93,11 +98,11 @@ object SimpleServer extends App with MySslConfiguration {
 
       case x: ConnectionClosed =>
         clients -= sender()
-        // print("connected clients: "+clients.size+"                    \r")
+        print("connected clients: "+clients.size+"                    \r")
 
       case x: Terminated =>
         clients -=(sender())
-        // print("connected clients: "+clients.size+"                    \r")
+        print("connected clients: "+clients.size+"                    \r")
 
       case x =>
         println("[SERVER] recieved unknown message: "+x)
@@ -113,15 +118,10 @@ object SimpleServer extends App with MySslConfiguration {
 
     override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
-    // val server = self.getContext().parent
-    // var handshakes = 0
-
     def businessLogic: Receive = {
 
-      case x @ (_: BinaryFrame | _: TextFrame) =>
-        sender() ! x
-
-      // case x @ (_: BinaryFrame) =>
+      // uncomment if running echo benchmarks
+      // case x @ (_: BinaryFrame | _: TextFrame) =>
       //   sender() ! x
 
       case msg: TextFrame =>
@@ -149,7 +149,7 @@ object SimpleServer extends App with MySslConfiguration {
       // onClose
       case x: ConnectionClosed =>
         // println("[WORKER] connection closing...")
-        // parent ! x
+        parent ! x
         context.stop(self)
 
       case ConfirmedClosed =>
@@ -166,6 +166,9 @@ object SimpleServer extends App with MySslConfiguration {
     def businessLogicNoUpgrade: Receive = {
       implicit val refFactory: ActorRefFactory = context
       runRoute {
+        path(""){
+          getFromResource("index.html")
+        }~
         getFromResourceDirectory(".")
       }
     }
@@ -178,12 +181,11 @@ object SimpleServer extends App with MySslConfiguration {
 
     override def receive: Receive = {
       case ("start", port:Int) =>
-        // println("about to start server on port "+port)
         val server = system.actorOf(WebSocketServer.props(), "server")
-        // IO(UHttp) ! Http.Bind(server, "localhost", port)
         IO(UHttp) ! Http.Bind(server, "0.0.0.0", port)
 
-      case Http.Bound(x) => println("server listening on "+x)
+      case Http.Bound(x) =>
+        println("server listening on "+x)
 
       case x: Http.CommandFailed =>
         println("CommandFailed! (probably couldn't initialize server): "+x)
@@ -204,7 +206,6 @@ object SimpleServer extends App with MySslConfiguration {
 
     val serverManager: ActorRef = system.actorOf(Props[ServerManager], "servermanager")
     serverManager ! ("start", 8080)
-    // serverManager ! ("start")
 
     readLine("Hit ENTER to exit ...\n")
     println("shutting down server")
@@ -213,19 +214,5 @@ object SimpleServer extends App with MySslConfiguration {
     system.awaitTermination()
   }
 
-  // def doMain() {
-  //   implicit val system = ActorSystem()
-  //   import system.dispatcher
-
-  //   val server = system.actorOf(WebSocketServer.props(), "websocket")
-
-  //   IO(UHttp) ! Http.Bind(server, "localhost", 8080)
-
-  //   readLine("Hit ENTER to exit ...\n")
-  //   system.shutdown()
-  //   system.awaitTermination()
-  // }
-
-  // because otherwise we get an ambiguous implicit if doMain is inlined
   doMain()
 }

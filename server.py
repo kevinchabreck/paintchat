@@ -61,7 +61,7 @@ class PaintFactory(WebSocketServerFactory):
             'GETBUFFER':self.sendBuffer,
             'USERNAME':self.checkName,
             'PAINT':self.updateBuffer,
-            'RESET':self.resetBuffer,
+            '   ':self.resetBuffer,
             'CHAT':self.sendChat
         }
         self.c=0
@@ -187,16 +187,10 @@ class PaintFactory(WebSocketServerFactory):
     #     client.sendMessage('USERS:'+str(len(self.USERNAMES)))
 
 if __name__ == '__main__':
-    # port = '9001'
-    port = '8080'
-    # print('starting server on port '+port)
+    port = '9001'
     print 'starting server on port '+port
-    # print 'connected clients: 0\r',
-    # define a factory
     factory = PaintFactory("ws://localhost:"+port)
-    # assign it a protocol
     factory.protocol = PaintProtocol
-    # start listening
     factory.setProtocolOptions(allowHixie76=True)
     listenWS(factory)
     reactor.run()

@@ -1,0 +1,24 @@
+Loading wsperf result file drawws_results_akka.json ..
+
+Aggregate results (WebSocket Opening+Closing Handshake)
+
+          Duration:      12.8 s
+             Total:      5000
+           Success:      2075
+              Fail:      2925
+            Fail %:     58.50
+    Handshakes/sec:       162
+
+     Min:       2.6 ms
+      SD:  906575.6 ms
+     Avg: 1076269.9 ms
+  Median: 1835374.6 ms
+  q90   : 1843132.3 ms
+  q95   : 1843172.2 ms
+  q99   : 1843178.4 ms
+  q99.9 : 1843181.4 ms
+  q99.99: 1843181.6 ms
+     Max: 1843181.6 ms
+
+
+Analyze done.

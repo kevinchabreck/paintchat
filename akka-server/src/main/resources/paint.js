@@ -6,6 +6,7 @@ function createCanvas(parent, width, height){
     var canvas = {};
     canvas.node = document.createElement('canvas');
     canvas.node.id = 'canvas';
+    // canvas.node.class = 'panel panel-default';
     canvas.context = canvas.node.getContext('2d');
     canvas.node.width = width;
     canvas.node.height = height;
@@ -68,8 +69,8 @@ function init(container, width, height) {
     var oldX = null;
     var oldY = null;
     var fillColor = 'black';
-    // var linewidth = $('#sizeSlider').val();
     var linewidth = 6;
+    var isTyping = true;
 
     /**************************************************************************
     * Canvas manipulation
@@ -134,18 +135,20 @@ function init(container, width, height) {
     }
 
     function start(e) {
-        e.preventDefault();
-        if(typeof e.originalEvent.touches != 'undefined'){
-            e = e.originalEvent.touches[0];
+        if(e.target.id=="chatInput"){
+
+        } else{
+            e.preventDefault();
+            if(typeof e.originalEvent.touches != 'undefined'){
+                e = e.originalEvent.touches[0];
+            }
+            oldX = e.pageX - rect.left;
+            oldY = e.pageY - rect.top;
+            canvas.isDrawing = true;
         }
-        oldX = e.pageX - rect.left;
-        oldY = e.pageY - rect.top;
-        // $("#toolSpace").hide();
-        canvas.isDrawing = true;
     }
 
     function stop(e) {
-        // $("#toolSpace").show();
         canvas.isDrawing = false;
     }
 
@@ -161,9 +164,7 @@ function init(container, width, height) {
     }
 
     function sendReset(e) {
-        if ((e.type == "click")||((e.type == "keypress") && (e.which == 114))){
-            ws.send('RESET:');
-        }
+        ws.send('RESET:');
     }
 
     function changeColor(e, color) {
@@ -176,21 +177,44 @@ function init(container, width, height) {
     function incSize(e){
         if (linewidth < 40){
             linewidth+=4;
-            // $("#colorPalette").css('font-size',"+=1");
-            // $("#colorPalette").animate({fontSize:"+=1"});
         }
     }
 
     function decSize(e){
         if (linewidth > 4){
             linewidth-=4;
-            // $("#colorPalette").css('font-size',"-=1");
-            // $("#colorPalette").animate({fontSize:"-=1"});
         }
     }
 
+    function useBrush(e){
+        $('#colorPalette').addClass("active").siblings().removeClass("active");
+        canvas.isErasing = false;
+    }
+
     function startErase(e){
+        $('#selectEraser').addClass("active").siblings().removeClass("active");
         canvas.isErasing = true;
+    }
+
+    function toggleChat(e){
+        $('#chatSpace').slideToggle("fast");
+    }
+
+    function sendChat(e){
+        // alertify.log("gonna chat!!! - "+$('#chatInput').val());
+        if((e.type == "click") || $('#chatInput').is(':focus')){
+            msg = 'CHAT:' + $('#chatInput').val();
+            ws.send(msg);
+            $('#chatInput').val("");
+        }
+    }
+
+    function keypress(e){
+        if(e.which == 114){ // "r"
+            sendReset(e);
+        } else if(e.which == 13) { // "enter"
+            sendChat(e);
+        }
     }
 
     $('#canvas').on('mousemove touchmove', draw);
@@ -205,18 +229,32 @@ function init(container, width, height) {
     $('#canvas').on('tap', stop);
     $('#canvas').on('tap', unfocus);
 
+    $('#colorPalette').on('click tap', useBrush);
     $('#sizePlus').on('click tap', incSize);
     $('#sizeMinus').on('click tap', decSize);
     $('#selectEraser').on('click tap', startErase);
+    $('#selectChat').on('click tap', toggleChat);
     $('#resetCanvas').on('click tap', sendReset);
 
     $(document).on('mousemove touchmove', move);
-    // $(document).on('mousedown touchstart', start);
     $(document).on('mousedown', start);
     $(document).on('mouseup touchend', stop);
-    $(document).on('keypress', sendReset);
+    $(document).on('keypress', keypress);
 
     $("#colorPalette").on('change.spectrum', changeColor);
+
+    $('.btn-group [title]').tooltip({
+      container: 'body',
+      delay: 5
+    });
+
+    // $("#selectChat").popover({
+    //     title: 'Twitter Bootstrap Popover',
+    //     content: "It's so simple to create a tooltop for my website!",
+    //     container: 'body'
+    // }).blur(function () {
+    //     $(this).popover('hide');
+    // });
 
     // resetButton.node.onclick = function(e) {
     //     ws.send('RESET:');
@@ -250,7 +288,10 @@ function init(container, width, height) {
     }
 
     function chat(e) {
-        // var msg = e.data.replace('CHAT:','');
+        var m = e.data
+        var sender = m.split(':',2)[1];
+        var msg = m.substring(m.indexOf(":", m.indexOf(":")+1)+1);
+        alertify.log('message from "'+sender+'": '+msg, 10000);
         // msg = '<b>' + msg.replace(':','</b>:');
         // var messageSpace = document.getElementById("messagesSpace");
         // messageSpace.innerHTML += msg + '</br></br>';
@@ -291,9 +332,9 @@ function init(container, width, height) {
         var msg = "Unable to connect with that username! ";
         msg +=    "Reason: "+reason+". ";
         msg +=    "Enter new username";
-        alertify.prompt(msg, function (e, username) {
+        alertify.prompt(msg, function (e, name) {
             if (e) {
-                ws.send('USERNAME:'+username);
+                ws.send('USERNAME:'+name);
             } else {
                 ws.send('USERNAME:anonymous');
             }
@@ -323,13 +364,12 @@ function init(container, width, height) {
         // userlistSpace.innerHTML = ul;
     }
 
-    function error(e) {
+    function servererror(e) {
         var error = e.data.replace('ERROR:','');
         alertify.log("server error: "+error);
     }
 
     // determine websocket URI
-    // var port = "9001"
     var port = "8080"
     var wsuri;
     if (window.location.protocol === "file:") {
@@ -352,6 +392,7 @@ function init(container, width, height) {
         ws.onopen = function() {
             ws.send('GETBUFFER:');
             alertify.prompt("Enter your username", function (e, username) {
+                // e.preventDefault();
                 if (e) {
                     ws.send('USERNAME:' + username);
                 } else {
@@ -360,8 +401,13 @@ function init(container, width, height) {
             }, "anonymous");
         };
 
-        ws.onclose = function() {
-            alertify.error('server shut down');
+        // ws.onclose = function() {
+        ws.onclose = function(e) {
+            if (e.code == 1006){
+                alertify.error("Error: Could not reach WebSocket server at "+wsuri);
+            } else {
+                alertify.error('Error: server disconnected: '+e.code+' - reason: '+e.reason);
+            }
         };
 
         var handlers = {
@@ -374,7 +420,7 @@ function init(container, width, height) {
             'DENIED': denied,
             'PAINTBUFFER': paintbuffer,
             'USERS': users,
-            'ERROR': error
+            'ERROR': servererror
         }
 
         ws.onmessage = function(e) {
@@ -388,6 +434,11 @@ function init(container, width, height) {
     /**************************************************************************
     * jQuery animation functions
     **************************************************************************/
+
+    // $(".btn-group > .btn").click(function(){
+        // $(this).addClass("active").siblings().removeClass("active");
+        // $(this).siblings().removeClass("active");
+    // });
 
     // $(".colorSpace").hover( function(){
     //     $(this).animate({ height: "45", width: "45" }, "fast");
