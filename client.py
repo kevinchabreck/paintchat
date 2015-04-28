@@ -8,6 +8,7 @@ from autobahn.websocket.protocol import Timings, WebSocketProtocol
 clients = {}
 counter = 0
 
+
 class BroadcastClientProtocol(WebSocketClientProtocol):
 
     """
@@ -20,12 +21,12 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         self.setTrackTimings(True)
         self.trackTimings = True
         self.msgId = 0
-        self.interval = 1
+        self.interval = 0.5
         self.record = []
 
     def sendHello(self):
 
-        if self.msgId < 2:
+        if self.msgId < 60:
             self.sendMessage("PAINT:" + str(clients[self])+" "+ str(self.msgId)+ " " + "249 285 6 black".encode('utf8'))
             reactor.callLater(self.interval, self.sendHello)
             self.msgId = self.msgId + 1
@@ -72,8 +73,9 @@ if __name__ == '__main__':
     #     sys.exit(1)
 
     # clients = {}
+    num_clients = 100
 
-    for i in range(2):
+    for i in range(num_clients):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
@@ -82,7 +84,9 @@ if __name__ == '__main__':
         # clients[f.protocol] = i
         # connectWS(f)
 
-        f = WebSocketClientFactory("ws://localhost:9001")
+        port = 8080
+        # f = WebSocketClientFactory("ws://localhost:" + str(port))
+        f = WebSocketClientFactory("ws://192.168.1.3:8080")
         f.protocol = BroadcastClientProtocol
         connectWS(f)
         # f2 = WebSocketClientFactory("ws://localhost:9001")
