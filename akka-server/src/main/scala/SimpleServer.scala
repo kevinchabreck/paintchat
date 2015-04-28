@@ -1,23 +1,26 @@
 package spray.can.websocket.examples
 
-import akka.actor.{ ActorSystem, Actor, Props, ActorLogging, ActorRef, ScalaActorRef, ActorRefFactory }
+import akka.actor.{ ActorSystem, Actor, Props, ActorLogging, ActorRef, ScalaActorRef, ActorRefFactory, Terminated}
 import akka.io.IO
 import spray.can.Http
 import spray.can.server.UHttp
 import spray.can.websocket
 import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame }
 import spray.http.HttpRequest
-import spray.can.websocket.FrameCommandFailed
+import spray.can.websocket.{ UpgradedToWebSocket, FrameCommandFailed }
 import spray.routing.HttpServiceActor
+import spray.json._
+import DefaultJsonProtocol._
 import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
 
-case class ForwardFrame(frame: Frame)
+// case class ForwardFrame(frame: Frame)
 
 object SimpleServer extends App with MySslConfiguration {
 
   final case class Push(msg: String)
+  case class ForwardFrame(frame: Frame)
 
   // class ClientRouter extends Actor {
   //   var router = {
@@ -48,44 +51,59 @@ object SimpleServer extends App with MySslConfiguration {
 
     // import context.dispatcher
     val clients = collection.mutable.Map[ActorRef, String]()
-    val paintbuffer = collection.mutable.ListBuffer[String]()
+    val paintbuffer = new collection.mutable.ListBuffer[String]
 
     def receive = {
       // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
       case Http.Connected(remoteAddress, localAddress) =>
-        println("new connection "+remoteAddress+" - creating new actor")
-        // val serverConnection = sender()
-        // val conn = context.actorOf(WebSocketWorker.props(serverConnection, self))
-        // serverConnection ! Http.Register(conn)
+        // println("new connection "+remoteAddress+" - creating new actor")
         val conn = context.actorOf(WebSocketWorker.props(sender(), self))
+        context.watch(conn)
         sender() ! Http.Register(conn)
-        clients(conn) = ""
+
+      case UpgradedToWebSocket =>
+        clients(sender()) = ""
+        print("connected clients: "+clients.size+"                    \r")
 
       case msg: TextFrame =>
         val _ = msg.payload.utf8String.split(":",2).toList match {
-          case "PAINT"::data =>
-            // println("[SERVER] recieved PAINT message")
-            println("[SERVER] broadcasting: "+msg.payload.utf8String)
-            paintbuffer += msg.payload.utf8String
+
+          case "PAINT"::data::_ =>
+            paintbuffer += data
             clients.keys.foreach(_.forward(ForwardFrame(msg)))
-          // case "GETBUFFER"::_ =>
+
+          case "GETBUFFER"::_ =>
+            sender() ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
+
           case "USERNAME"::username::_ =>
-            println("[SERVER] new user: "+username)
+            // println("[SERVER] new user: "+username)
             clients(sender()) = username
             sender() ! Push("ACCEPTED:"+username)
             clients.keys.filter(_ != sender()).foreach(_ ! Push("INFO:"+username+" has joined"))
+
           case "RESET"::_ =>
             sender() ! Push("SRESET:")
             clients.keys.filter(_ != sender()).foreach(_ ! Push("RESET:"+clients(sender())))
+            paintbuffer.clear()
 
-          // case "CHAT":: =>
+          case "CHAT"::message::_ =>
+            // clients(sender()) = username
+            val m = "CHAT:"+clients(sender())+":"+message
+            // println("broadcasting chat: "+m)
+            // sender() ! Push("CHAT:"+clients(sender())+":"+message)
+            clients.keys.filter(_ != sender()).foreach(_ ! Push(m))
+
           case _ =>
-            println("[SERVER] recieved unrecognized message: "+msg.payload.utf8String)
+            println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
         }
 
       case x: ConnectionClosed =>
-        println("[SERVER] registered ConnectionClosed event from "+sender())
         clients -= sender()
+        print("connected clients: "+clients.size+"                    \r")
+
+      case x: Terminated =>
+        clients -=(sender())
+        print("connected clients: "+clients.size+"                    \r")
 
       case x =>
         println("[SERVER] recieved unknown message: "+x)
@@ -94,10 +112,6 @@ object SimpleServer extends App with MySslConfiguration {
   }
 
   // these are actors - one for each connection
-  // object WebSocketWorker {
-  //   def props(serverConnection: ActorRef) = Props(classOf[WebSocketWorker], serverConnection)
-  // }
-  // class WebSocketWorker(val serverConnection: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
   object WebSocketWorker {
     def props(serverConnection: ActorRef, parent: ActorRef) = Props(classOf[WebSocketWorker], serverConnection, parent)
   }
@@ -105,18 +119,14 @@ object SimpleServer extends App with MySslConfiguration {
 
     override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
-    // val server = self.getContext().parent
-    // val server = self.getContext().parent
-
     def businessLogic: Receive = {
 
-      // recieve binary frame from client
-      case x @ (_: BinaryFrame) => sender() ! x
+      // uncomment if running echo benchmarks
+      // case x @ (_: BinaryFrame | _: TextFrame) =>
+      //   sender() ! x
 
-      // recieve text frame from client>
       case msg: TextFrame =>
         // val m = msg.payload.utf8String
-        // println("[WORKER(path = "+self.path+")] recieved textframe: ["+m+"] from "+sender())
         // println("sending frame to parent")
         parent ! msg
 
@@ -139,15 +149,16 @@ object SimpleServer extends App with MySslConfiguration {
 
       // onClose
       case x: ConnectionClosed =>
-        println("[WORKER] connection closing...")
+        // println("[WORKER] connection closing...")
         parent ! x
         context.stop(self)
 
       case ConfirmedClosed =>
         // println("[WORKER] connection CONFIRMED closed")
 
-      case websocket.UpgradedToWebSocket =>
+      case UpgradedToWebSocket =>
         // println("[WORKER] upgraded to websocket - sender(): "+sender())
+        // parent forward UpgradedToWebSocket
 
       case x =>
         println("[WORKER] recieved unknown message: "+x)
@@ -156,6 +167,9 @@ object SimpleServer extends App with MySslConfiguration {
     def businessLogicNoUpgrade: Receive = {
       implicit val refFactory: ActorRefFactory = context
       runRoute {
+        path(""){
+          getFromResource("index.html")
+        }~
         getFromResourceDirectory(".")
       }
     }
@@ -168,11 +182,11 @@ object SimpleServer extends App with MySslConfiguration {
 
     override def receive: Receive = {
       case ("start", port:Int) =>
-        println("about to start server on port "+port)
         val server = system.actorOf(WebSocketServer.props(), "server")
-        IO(UHttp) ! Http.Bind(server, "localhost", port)
+        IO(UHttp) ! Http.Bind(server, "0.0.0.0", port)
 
-      case Http.Bound(x) => println("server initialized! Listening to "+x)
+      case Http.Bound(x) =>
+        println("server listening on "+x)
 
       case x: Http.CommandFailed =>
         println("CommandFailed! (probably couldn't initialize server): "+x)
@@ -193,7 +207,6 @@ object SimpleServer extends App with MySslConfiguration {
 
     val serverManager: ActorRef = system.actorOf(Props[ServerManager], "servermanager")
     serverManager ! ("start", 8080)
-    // serverManager ! ("start")
 
     readLine("Hit ENTER to exit ...\n")
     println("shutting down server")
@@ -202,19 +215,5 @@ object SimpleServer extends App with MySslConfiguration {
     system.awaitTermination()
   }
 
-  // def doMain() {
-  //   implicit val system = ActorSystem()
-  //   import system.dispatcher
-
-  //   val server = system.actorOf(WebSocketServer.props(), "websocket")
-
-  //   IO(UHttp) ! Http.Bind(server, "localhost", 8080)
-
-  //   readLine("Hit ENTER to exit ...\n")
-  //   system.shutdown()
-  //   system.awaitTermination()
-  // }
-
-  // because otherwise we get an ambiguous implicit if doMain is inlined
   doMain()
 }

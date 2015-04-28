@@ -1,0 +1,16 @@
+
+{
+   "options": {
+      "connections": 100,
+      "batchsize": 100,
+      "batchdelay": 10,
+      "retrydelay": 10
+   },
+   "servers":  [
+                  {
+                     "name": "Akka-server",
+                     "uri": "ws://localhost:8080",
+                     "desc": "Autobahn WebSocket Python on localhost"
+                  }
+               ]
+}

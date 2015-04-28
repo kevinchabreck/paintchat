@@ -58,3 +58,5 @@ target/
 
 */.DS_Store
 js/alertify.js-0.3.11/
+
+benchmarks/temp/*

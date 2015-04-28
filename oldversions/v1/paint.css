@@ -1,8 +1,8 @@
 
 /* Space out content a bit */
 body {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: 20px;
+  padding-bottom: 20px;
 }
 
 /* Everything but the jumbotron gets side spacing for mobile first views */
@@ -15,15 +15,14 @@ body {
 
 /* Custom page header */
 .header {
-  /*padding-bottom: 20px;*/
-  padding-bottom: 10px;
+  padding-bottom: 20px;
   /*border-bottom: 1px solid #e5e5e5;*/
 }
 
 /* Custom page footer */
 .footer {
   text-align: center;
-  margin-top: 10px;
+  margin-top: 15px;
   padding-top: 19px;
   color: #777;
   /*border-top: 1px solid #e5e5e5;*/
@@ -48,66 +47,25 @@ body {
 }*/
 
 #toolSpace {
-  /*padding-top: 20px;*/
   padding-top: 10px;
   /*padding-bottom: 10px;*/
 }
 
-#chatspace {
-  /*margin-top: 50px;*/
-}
-
-#canvasPanelBody {
-  /*margin: 0px;*/
-  padding: 0px;
-}
-
-#canvasPanel {
-  margin-bottom: 0px;
-  width: auto;
-  height: auto;
-  overflow: hidden;
-  text-align: center;
-  max-height: 394px;
-  margin-bottom: 15px;
-}
-
 #canvasSpace {
-  /*padding-top: 10px;*/
+  padding-top: 20px;
   /*padding-bottom: 10px;*/
-}
-
-.canvas {
-  /*border:1px solid #000000;*/
 }
 
 /*#colorPalette {
   font-size: 2em;
 }*/
 
-/*.panel {
-  padding: 0px;
-  margin: 0px;
-}*/
-
 #colorPalette,
 #sizePlus,
 #sizeMinus,
 #selectEraser,
-#selectChat,
 #resetCanvas {
-  vertical-align: middle;
   font-size: 2em;
-}
-
-.toolbutton {
-  padding-top: 0px;
-  vertical-align: middle;
-}
-
-.tool {
-  padding-top: 0px;
-  vertical-align: middle;
 }
 
 /* Main marketing message and sign up button */
@@ -115,9 +73,8 @@ body {
 .container
 {
   text-align: center;
-  /*width: 730px;*/
-  /*max-width: 730px;*/
-  max-width: 700px;
+  width: 730px;
+  max-width: 730px;
   padding-left: 0px;
   padding-right: 0px;
   /*margin-left: auto;*/

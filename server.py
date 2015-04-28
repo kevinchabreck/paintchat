@@ -5,9 +5,12 @@
 #
 ##############################################################################
 
+# from __future__ import print_function
 from twisted.internet import reactor
 from autobahn.twisted.websocket import WebSocketServerFactory, WebSocketServerProtocol, listenWS
 import json
+import sys
+# from __future__ import print_function
 
 # @class:       PaintProtocol
 # @description: a protocol with event handlers for opening connections, closing
@@ -15,6 +18,8 @@ import json
 #               the PaintFactory class
 # @extends:     WebSocketServerProtocol
 class PaintProtocol(WebSocketServerProtocol):
+
+    clients = 0
 
     # @function:    onOpen
     # @description: handles the event of establishing a new connection
@@ -59,6 +64,7 @@ class PaintFactory(WebSocketServerFactory):
             'RESET':self.resetBuffer,
             'CHAT':self.sendChat
         }
+        self.c=0
 
     # @function:    registerConnection
     # @description: adds client to list of connection
@@ -66,6 +72,9 @@ class PaintFactory(WebSocketServerFactory):
     def registerConnection(self, client):
         if client not in self.CLIENTS:
             # print 'registered connection '+client.peer
+            self.c+=1
+            sys.stdout.write('connected clients: {0}           \r'.format(self.c))
+            sys.stdout.flush()
             self.CLIENTS[client] = ''
         # else:
             # print 'unable to register connection'
@@ -86,6 +95,9 @@ class PaintFactory(WebSocketServerFactory):
     # @description: removes client to list of connection
     # @param:       client - the cient to remove from the client dictionary
     def unregister(self, client):
+        self.c-=1
+        sys.stdout.write('connected clients: {0}           \r'.format(self.c))
+        sys.stdout.flush()
         if client in self.CLIENTS:
             username = self.CLIENTS[client]
             del self.CLIENTS[client]
@@ -177,11 +189,9 @@ class PaintFactory(WebSocketServerFactory):
 if __name__ == '__main__':
     port = '9001'
     print 'starting server on port '+port
-    # define a factory
     factory = PaintFactory("ws://localhost:"+port)
-    # assign it a protocol
     factory.protocol = PaintProtocol
-    # start listening
     factory.setProtocolOptions(allowHixie76=True)
     listenWS(factory)
     reactor.run()
+
