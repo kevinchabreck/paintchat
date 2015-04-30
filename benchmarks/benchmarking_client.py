@@ -8,6 +8,7 @@ from autobahn.websocket.protocol import Timings, WebSocketProtocol
 clients = {}
 counter = 0
 
+
 class BroadcastClientProtocol(WebSocketClientProtocol):
 
     """
@@ -20,7 +21,7 @@ class BroadcastClientProtocol(WebSocketClientProtocol):
         self.setTrackTimings(True)
         self.trackTimings = True
         self.msgId = 0
-        self.interval = 0.1
+        self.interval = 0.5
         self.record = []
 
     def sendHello(self):
@@ -71,8 +72,10 @@ if __name__ == '__main__':
     #     sys.exit(1)
 
     # clients = {}
+    num_clients = 100
 
-    for i in range(100):
+
+    for i in range(num_clients):
         # clients[i] = WebSocketClientFactory("ws://localhost:9001")
         # clients[i].protocol = BroadcastClientProtocol
 
@@ -80,6 +83,7 @@ if __name__ == '__main__':
         # f.protocol = BroadcastClientProtocol
         # clients[f.protocol] = i
         # connectWS(f)
+
         port = "8080"
         f = WebSocketClientFactory("ws://localhost:"+port)
         f.protocol = BroadcastClientProtocol
