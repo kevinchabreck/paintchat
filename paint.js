@@ -39,19 +39,6 @@ function createPalette(){
     });
 }
 
-// function createInputBox(parent){
-//     var textBox = {};
-//     textBox.node = document.createElement('textarea');
-//     textBox.node.rows = 5;
-//     textBox.node.cols = 32;
-//     textBox.node.maxlength = 100;
-//     textBox.node.placeholder = 'say something!';
-//     wrap = "hard";
-//     textBox.node.id = 'inputBox';
-//     parent.appendChild(textBox.node);
-//     return textBox;
-// }
-
 function init(container, width, height) {
 
     /**************************************************************************
@@ -203,11 +190,21 @@ function init(container, width, height) {
     }
 
     function sendChat(e){
-        // alertify.log("gonna chat!!! - "+$('#chatInput').val());
         if((e.type == "click") || $('#chatInput').is(':focus')){
-            msg = 'CHAT:' + $('#chatInput').val();
-            ws.send(msg);
-            alertify.log("Me: "+$('#chatInput').val());
+            msg = $('#chatInput').val();
+            ws.send('CHAT:'+msg);
+            noty({
+                text: "<b>Me</b>: "+msg,
+                layout: 'topRight',
+                type: 'information',
+                animation: {
+                    open: 'animated bounceInRight',
+                    close: 'animated fadeOut'
+                },
+                timeout: 4000,
+                maxVisible: 0,
+                theme: 'relax'
+            });
             $('#chatInput').val("");
         }
     }
@@ -295,7 +292,19 @@ function init(container, width, height) {
         var m = e.data
         var sender = m.split(':',2)[1];
         var msg = m.substring(m.indexOf(":", m.indexOf(":")+1)+1);
-        alertify.log('message from "'+sender+'": '+msg, 10000);
+        // alertify.log('message from "'+sender+'": '+msg, 10000);
+        noty({
+            text: '<b>'+sender+'</b>: '+msg,
+            layout: 'topRight',
+            type: 'information',
+            animation: {
+                open: 'animated bounceInRight',
+                close: 'animated fadeOut'
+            },
+            timeout: 4000,
+            maxVisible: 0,
+            theme: 'relax'
+        });
         // msg = '<b>' + msg.replace(':','</b>:');
         // var messageSpace = document.getElementById("messagesSpace");
         // messageSpace.innerHTML += msg + '</br></br>';
@@ -305,23 +314,70 @@ function init(container, width, height) {
 
     function info(e) {
         var info = e.data.replace('INFO:','');
-        alertify.log("user "+info);
+        // alertify.log("user "+info);
+        noty({
+            text: "user "+info,
+            layout: 'topRight',
+            type: 'warning',
+            animation: {
+                open: 'animated bounceInRight',
+                close: 'animated fadeOut'
+            },
+            timeout: 4000,
+            maxVisible: 0,
+            theme: 'relax'
+        });
     }
 
     function reset(e) {
         var username = e.data.replace('RESET:','');
-        alertify.log("user "+username+" has reset the drawing board!");
+        // alertify.log("user "+username+" has reset the drawing board!");
+        noty({
+            text: "user "+username+" has reset the drawing board!",
+            layout: 'topRight',
+            type: 'warning',
+            animation: {
+                open: 'animated bounceInRight',
+                close: 'animated fadeOut'
+            },
+            timeout: 4000,
+            maxVisible: 0,
+            theme: 'relax'
+        });
         ctx.clear();
     }
 
     function selfreset(e) {
-        alertify.log("You have reset the drawing board!");
+        // alertify.log("You have reset the drawing board!");
+        noty({
+            text: "You have reset the drawing board!",
+            layout: 'topRight',
+            type: 'warning',
+            animation: {
+                open: 'animated bounceInRight',
+                close: 'animated fadeOut'
+            },
+            timeout: 4000,
+            maxVisible: 0,
+            theme: 'relax'
+        });
         ctx.clear();
     }
 
     function accepted(e) {
         var username = e.data.replace('ACCEPTED:','');
-        alertify.success('connected to server as "'+username+'"');
+        // alertify.success('connected to server as "'+username+'"');
+        noty({
+            text: 'connected to server as "'+username+'"',
+            layout: 'top',
+            type: 'success',
+            animation: {
+                open: 'animated bounceInDown',
+                close: 'animated fadeOut'
+            },
+            timeout: 4000,
+            theme: 'relax'
+        });
         var title = username;
         if (window.location.protocol === "file:") {
             title += " - local";
@@ -369,12 +425,22 @@ function init(container, width, height) {
     }
 
     function servererror(e) {
-        var error = e.data.replace('ERROR:','');
-        alertify.log("server error: "+error);
+        noty({
+            text: "server error: "+e.message,
+            layout: 'top',
+            type: 'error',
+            animation: {
+                open: 'animated bounceInDown',
+                close: 'animated fadeOut'
+            },
+            timeout: 0,
+            maxVisible: 0,
+            theme: 'relax'
+        });
     }
 
     // determine websocket URI
-    var port = "9001"
+    var port = "8080"
     var wsuri;
     if (window.location.protocol === "file:") {
        wsuri = "ws://localhost:"+port;
@@ -389,14 +455,14 @@ function init(container, width, height) {
     } else if ("MozWebSocket" in window) {
        ws = new MozWebSocket(wsuri);
     } else {
-       alertify.error("Browser does not support WebSocket!");
+       // alertify.error("Browser does not support WebSocket!");
+       servererror({message:"Browser does not support WebSocket!"});
     }
 
     if(ws){
         ws.onopen = function() {
             ws.send('GETBUFFER:');
             alertify.prompt("Enter your username", function (e, username) {
-                // e.preventDefault();
                 if (e) {
                     ws.send('USERNAME:' + username);
                 } else {
@@ -405,13 +471,15 @@ function init(container, width, height) {
             }, "anonymous");
         };
 
-        // ws.onclose = function() {
         ws.onclose = function(e) {
+            var msg = '';
             if (e.code == 1006){
-                alertify.error("Error: Could not reach WebSocket server at "+wsuri);
+                msg = 'Could not reach WebSocket server at '+wsuri
             } else {
-                alertify.error('Error: server disconnected: '+e.code+' - reason: '+e.reason);
+                msg = 'Server disconnected: '+e.code+' - reason: '+e.reason
             }
+            e.message = msg;
+            servererror(e);
         };
 
         var handlers = {
@@ -429,6 +497,7 @@ function init(container, width, height) {
 
         ws.onmessage = function(e) {
             // alertify.log("server: "+e.data);
+            // noty({text: '[noty] '+e.data});
             var params = e.data.split(':');
             var header = params[0];
             handlers[header](e);

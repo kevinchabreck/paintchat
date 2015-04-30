@@ -17,8 +17,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/alertify.js/0.3.0/alertify.min.js"></script>
 
     <link rel="stylesheet" href="js/alertify/alertify.core.css">
-    <!-- <link rel="stylesheet" href="js/alertify/alertify.default.css"> -->
     <link rel="stylesheet" href="js/alertify/alertify.bootstrap.css">
+
+    <script type="text/javascript" src="js/noty/jquery.noty.packaged.min.js"></script>
+    <link rel="stylesheet" href="js/animate/animate.css">
 
     <!-- uncomment if CDNs unavailable -->
     <!--
@@ -45,27 +47,19 @@
         <h1>draw.ws</h1>
       </div>
 
+      <!-- <div id="canvasPanel" class="panel panel-default"> -->
+      <div id="canvasPanel" class="panel panel-default">
+        <div id="canvasPanelBody" class="panel-body">
+      <!-- <div class="row"> -->
+          <div id="canvasSpace" ></div>
+      <!-- </div> -->
+        </div>
+      </div>
+
       <div class="row">
         <div class="col-lg-12">
-          <div class="row">
+          <!-- <div class="row">
             <div id="canvasSpace"></div>
-          </div>
-          <!-- <div id="toolSpace" class="row row-centered">
-            <div class="col-lg-1 col-centered">
-              <span type='span' id="colorPalette" class="glyphicon glyphicon-pencil"></span>
-            </div>
-            <div class="col-lg-1 col-centered">
-              <span type='span' id="sizeMinus" class="glyphicon glyphicon-minus-sign"></span>
-            </div>
-            <div class="col-lg-1 col-centered">
-              <span type='span' id="sizePlus" class="glyphicon glyphicon-plus-sign"></span>
-            </div>
-            <div class="col-lg-1 col-centered">
-              <span type='span' id="selectEraser" class="glyphicon glyphicon-erase"></span>
-            </div>
-            <div class="col-lg-1 col-centered">
-              <span type='span' id="resetCanvas" class="glyphicon glyphicon-trash"></span>
-            </div>
           </div> -->
 
           <!-- <div id="chatSpace" class="row row-centered"> -->
@@ -88,11 +82,11 @@
                 <span type='span' class="tool glyphicon glyphicon-pencil"></span>
               </button>
               <button id="sizeMinus" type="button" class="toolbutton btn btn-default"
-                      data-toggle="tooltip" data-placement="top" title="Increase brush size">
+                      data-toggle="tooltip" data-placement="top" title="Decrease brush size">
                 <span type='span' class="tool glyphicon glyphicon-minus-sign"></span>
               </button>
               <button id="sizePlus" type="button" class="toolbutton btn btn-default"
-                      data-toggle="tooltip" data-placement="top" title="Decrease brush size">
+                      data-toggle="tooltip" data-placement="top" title="Increase brush size">
                 <span type='span' class="tool glyphicon glyphicon-plus-sign"></span>
               </button>
               <button id="selectEraser" type="button" class="toolbutton btn btn-default"
