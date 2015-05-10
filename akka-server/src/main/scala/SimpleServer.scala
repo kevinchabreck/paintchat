@@ -35,7 +35,7 @@ object SimpleServer extends App with MySslConfiguration {
   //   def receive = {
 
   //     case x @ (_: TextFrame) =>
-  //       router.route(x, sender())
+  //       router.route(x, sender)
   //     case Terminated(a) =>
   //       router = router.removeRoutee(a)
   //       val r = context.actorOf(Props[Worker])
@@ -57,12 +57,12 @@ object SimpleServer extends App with MySslConfiguration {
       // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
       case Http.Connected(remoteAddress, localAddress) =>
         // println("new connection "+remoteAddress+" - creating new actor")
-        val conn = context.actorOf(WebSocketWorker.props(sender(), self))
+        val conn = context.actorOf(WebSocketWorker.props(sender, self))
         context.watch(conn)
-        sender() ! Http.Register(conn)
+        sender ! Http.Register(conn)
 
       case UpgradedToWebSocket =>
-        clients(sender()) = ""
+        clients(sender) = ""
         print("connected clients: "+clients.size+"                    \r")
 
       case msg: TextFrame =>
@@ -73,36 +73,35 @@ object SimpleServer extends App with MySslConfiguration {
             clients.keys.foreach(_.forward(ForwardFrame(msg)))
 
           case "GETBUFFER"::_ =>
-            sender() ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
+            sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
 
           case "USERNAME"::username::_ =>
             // println("[SERVER] new user: "+username)
-            clients(sender()) = username
-            sender() ! Push("ACCEPTED:"+username)
-            clients.keys.filter(_ != sender()).foreach(_ ! Push("INFO:"+username+" has joined"))
+            clients(sender) = username
+            sender ! Push("ACCEPTED:"+username)
+            clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
 
           case "RESET"::_ =>
-            sender() ! Push("SRESET:")
-            clients.keys.filter(_ != sender()).foreach(_ ! Push("RESET:"+clients(sender())))
+            sender ! Push("SRESET:")
+            // clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
+            clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
             paintbuffer.clear()
 
           case "CHAT"::message::_ =>
-            // clients(sender()) = username
-            val m = "CHAT:"+clients(sender())+":"+message
+            val m = "CHAT:"+clients(sender)+":"+message
             // println("broadcasting chat: "+m)
-            // sender() ! Push("CHAT:"+clients(sender())+":"+message)
-            clients.keys.filter(_ != sender()).foreach(_ ! Push(m))
+            clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
           case _ =>
             println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
         }
 
       case x: ConnectionClosed =>
-        clients -= sender()
+        clients -= sender
         print("connected clients: "+clients.size+"                    \r")
 
       case x: Terminated =>
-        clients -=(sender())
+        clients -=(sender)
         print("connected clients: "+clients.size+"                    \r")
 
       case x =>
@@ -123,21 +122,18 @@ object SimpleServer extends App with MySslConfiguration {
 
       // uncomment if running echo benchmarks
       // case x @ (_: BinaryFrame | _: TextFrame) =>
-      //   sender() ! x
+      //   sender ! x
 
       case msg: TextFrame =>
-        // val m = msg.payload.utf8String
-        // println("sending frame to parent")
         parent ! msg
 
       case ForwardFrame(f) =>
         // println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
-        // println("sender: "+sender())
         send(f)
 
       case Push(msg) =>
         // println("[WORKER] recieved a Push: "+msg)
-        // println("sender: "+sender())
+        // println("sender: "+sender)
         send(TextFrame(msg))
 
       case x: FrameCommandFailed =>
@@ -157,8 +153,7 @@ object SimpleServer extends App with MySslConfiguration {
         // println("[WORKER] connection CONFIRMED closed")
 
       case UpgradedToWebSocket =>
-        // println("[WORKER] upgraded to websocket - sender(): "+sender())
-        // parent forward UpgradedToWebSocket
+        // println("[WORKER] upgraded to websocket - sender: "+sender)
 
       case x =>
         println("[WORKER] recieved unknown message: "+x)
