@@ -3,12 +3,7 @@ name := "draw.ws server"
 
 version := "1.0"
 
-scalaVersion := "2.11.6"
-
-resolvers ++= Seq(
-	"Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
-	"spray repo" at "http://repo.spray.io"
-)
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
   	"com.typesafe.akka" % "akka-actor_2.11" % "2.3.9",
