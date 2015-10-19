@@ -15,6 +15,11 @@ import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
 
+import org.java_websocket.client.WebSocketClient
+import org.java_websocket.drafts.{Draft_17}
+import org.java_websocket.handshake.ServerHandshake
+import java.net.URI
+
 // case class ForwardFrame(frame: Frame)
 
 object SimpleServer extends App with MySslConfiguration {
@@ -182,6 +187,15 @@ object SimpleServer extends App with MySslConfiguration {
 
       case Http.Bound(x) =>
         println("server listening on "+x)
+	val numberClients = 10;
+    	val randomRange = 100;
+    	val base = 50;
+    	1 to numberClients foreach({ cnt => 
+      	  val client = new Client(cnt, Math.round(Math.random() * randomRange + base))
+      	  Thread.sleep(10)
+      	  println("I am here " + cnt)
+      	  client.connect();
+      	})
 
       case x: Http.CommandFailed =>
         println("CommandFailed! (probably couldn't initialize server): "+x)
@@ -193,6 +207,17 @@ object SimpleServer extends App with MySslConfiguration {
         println("unknown message delivered to SERVER MANAGER... (maybe CONFIRMED closed??): "+x)
     }
   }
+
+ class Client(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://localhost:8080/stats?id=$id"), new Draft_17){
+  	override def onMessage(message: String): Unit = {
+		 Thread.sleep(delay);
+		 println("Delay is " + delay)
+	}
+	override def onClose(code: Int, reason: String, remote: Boolean): Unit = println("This is being closed!")
+	override def onOpen(handshakedata: ServerHandshake): Unit = println(s"There is a websocket opened and the delay is $delay")
+	override def onError(ex: Exception): Unit = println("Ahh, I am in error! " + ex)
+    }
+
 
   def doMain() {
     implicit val system = ActorSystem()
