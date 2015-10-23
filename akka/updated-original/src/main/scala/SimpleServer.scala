@@ -27,10 +27,6 @@ object SimpleServer extends App with MySslConfiguration {
   final case class Push(msg: String)
   case class ForwardFrame(frame: Frame)
 
-  val numberClients = 10;
-  val randomRange = 100;
-  val base = 50;
-
   // class ClientRouter extends Actor {
   //   var router = {
   //     val routees = Vector.fill(5) {
@@ -65,19 +61,20 @@ object SimpleServer extends App with MySslConfiguration {
     def receive = {
       // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
       case Http.Connected(remoteAddress, localAddress) =>
-        // println("new connection "+remoteAddress+" - creating new actor")
-        val conn = context.actorOf(WebSocketWorker.props(sender, self))
+        println("new connection "+remoteAddress+" - creating new actor")
+        val conn = context.actorOf(WebSocketWorker.props(sender, self, remoteAddress))
         context.watch(conn)
         sender ! Http.Register(conn)
 
       case UpgradedToWebSocket =>
         clients(sender) = ""
-        print("connected clients: "+clients.size+"                    \r")
+        println("connected clients: "+clients.size)
 
       case msg: TextFrame =>
         val _ = msg.payload.utf8String.split(":",2).toList match {
 
           case "PAINT"::data::_ =>
+            println(data)
             paintbuffer += data
             clients.keys.foreach(_.forward(ForwardFrame(msg)))
 
@@ -85,20 +82,19 @@ object SimpleServer extends App with MySslConfiguration {
             sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
 
           case "USERNAME"::username::_ =>
-            // println("[SERVER] new user: "+username)
+            println("[SERVER] new user: "+username)
             clients(sender) = username
             sender ! Push("ACCEPTED:"+username)
             clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
 
           case "RESET"::_ =>
             sender ! Push("SRESET:")
-            // clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
             clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
             paintbuffer.clear()
 
           case "CHAT"::message::_ =>
             val m = "CHAT:"+clients(sender)+":"+message
-            // println("broadcasting chat: "+m)
+            println("broadcasting chat: "+m)
             clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
           case _ =>
@@ -121,9 +117,9 @@ object SimpleServer extends App with MySslConfiguration {
 
   // these are actors - one for each connection
   object WebSocketWorker {
-    def props(serverConnection: ActorRef, parent: ActorRef) = Props(classOf[WebSocketWorker], serverConnection, parent)
+    def props(serverConnection: ActorRef, parent: ActorRef, ipAddress : java.net.InetSocketAddress) = Props(classOf[WebSocketWorker], serverConnection, parent, ipAddress)
   }
-  class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
+  class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef, val ipAddress : java.net.InetSocketAddress) extends HttpServiceActor with websocket.WebSocketServerWorker {
 
     override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
@@ -137,32 +133,32 @@ object SimpleServer extends App with MySslConfiguration {
         parent ! msg
 
       case ForwardFrame(f) =>
-        // println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
+        println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
         send(f)
 
       case Push(msg) =>
-        // println("[WORKER] recieved a Push: "+msg)
-        // println("sender: "+sender)
+        println("[WORKER " + ipAddress + "] recieved a Push: "+msg)
+        println("sender: "+sender)
         send(TextFrame(msg))
 
       case x: FrameCommandFailed =>
-        // log.error("frame command failed", x)
+         println("frame command failed" + x)
 
       // should never happen... right?
       case x: HttpRequest =>
-        // println("[WORKER] got an http request: "+x)
+         println("[WORKER] got an http request: "+x)
 
       // onClose
       case x: ConnectionClosed =>
-        // println("[WORKER] connection closing...")
+         println("[WORKER] connection closing...")
         parent ! x
         context.stop(self)
 
       case ConfirmedClosed =>
-        // println("[WORKER] connection CONFIRMED closed")
+         println("[WORKER] connection CONFIRMED closed")
 
       case UpgradedToWebSocket =>
-        // println("[WORKER] upgraded to websocket - sender: "+sender)
+         println("[WORKER] upgraded to websocket - sender: "+sender)
 
       case x =>
         println("[WORKER] recieved unknown message: "+x)
@@ -191,14 +187,16 @@ object SimpleServer extends App with MySslConfiguration {
 
       case Http.Bound(x) =>
         println("server listening on "+x)
-	val numberClients = 10;
+	val numberClients = 10000;
     	val randomRange = 100;
     	val base = 50;
     	1 to numberClients foreach({ cnt => 
       	  val client = new Client(cnt, Math.round(Math.random() * randomRange + base))
       	  Thread.sleep(10)
       	  println("I am here " + cnt)
-      	  client.connect();
+      	  client.connectBlocking()
+          client.send("GETBUFFER:")
+          client.send("USERNAME:" + cnt)
       	})
 
       case x: Http.CommandFailed =>
@@ -212,7 +210,7 @@ object SimpleServer extends App with MySslConfiguration {
     }
   }
 
- class Client(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://localhost:8080/stats?id=$id"), new Draft_17){
+ class Client(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://localhost:8080/"), new Draft_17){
   	override def onMessage(message: String): Unit = {
 		 Thread.sleep(delay);
 		 println("Delay is " + delay)
