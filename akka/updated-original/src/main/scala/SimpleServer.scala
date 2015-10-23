@@ -31,21 +31,6 @@ object SimpleServer extends App with MySslConfiguration {
   val randomRange = 100;
   val base = 50;
 
-  1 to numberClients foreach({ cnt => 
-    val client = new Client(cnt, Math.round(Math.random() * randomRange + base))
-    Thread.sleep(10)
-    println("I am here " + cnt)
-    client.connect();
-    }
-  )
-
-  class Client(id: Int, delay: Long) extends WebSocketClient(){
-  	override def onMessage(message: String): Unit = {
-		 Thread.sleep(delay);
-		 println("Delay is " + delay)
-	}
-  }
-
   // class ClientRouter extends Actor {
   //   var router = {
   //     val routees = Vector.fill(5) {
