@@ -14,6 +14,7 @@ import DefaultJsonProtocol._
 import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
 import akka.routing.ActorRefRoutee
 import akka.routing.Router
+import org.java_web_socket.client.WebSocketClient
 
 // case class ForwardFrame(frame: Frame)
 
@@ -21,6 +22,25 @@ object SimpleServer extends App with MySslConfiguration {
 
   final case class Push(msg: String)
   case class ForwardFrame(frame: Frame)
+
+  val numberClients = 10;
+  val randomRange = 100;
+  val base = 50;
+
+  1 to numberClients foreach({ cnt => 
+    val client = new Client(cnt, Math.round(Math.random() * randomRange + base))
+    Thread.sleep(10)
+    println("I am here " + cnt)
+    client.connect();
+    }
+  )
+
+  class Client(id: Int, delay: Long) extends WebSocketClient(){
+  	override def onMessage(message: String): Unit = {
+		 Thread.sleep(delay);
+		 println("Delay is " + delay)
+	}
+  }
 
   // class ClientRouter extends Actor {
   //   var router = {
