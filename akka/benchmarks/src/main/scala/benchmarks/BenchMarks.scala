@@ -18,8 +18,6 @@ object Benchmarks extends App {
   }
 
   def doMain() {
-    //implicit val system = ActorSystem()
-    //val clientManager:  = system.actorOf(Props[TestClient], "
     val clientMap = collection.mutable.Map[TestClient, Int]()
 
     val numberClients = 10
