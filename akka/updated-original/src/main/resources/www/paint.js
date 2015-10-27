@@ -444,8 +444,10 @@ function init(container, width, height) {
     var wsuri;
     if (window.location.protocol === "file:") {
        wsuri = "ws://localhost:"+port;
+       // wsuri = "ws://localhost:"+port+"/ws";
     } else {
        wsuri = "ws://"+window.location.hostname+":"+port;
+       // wsuri = "ws://"+window.location.hostname+":"+port+"/ws";
     }
 
     // open websocket
