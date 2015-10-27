@@ -1,23 +1,28 @@
 package spray.can.websocket.examples
 
-import akka.actor.{ ActorSystem, Actor, Props, ActorLogging, ActorRef, ScalaActorRef, ActorRefFactory, Terminated}
+import akka.actor.{ActorSystem, Actor, Props, ActorLogging, ActorRef, ScalaActorRef, ActorRefFactory, Terminated}
 import akka.io.IO
-import spray.can.Http
+import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
+import akka.routing.{Router, ActorRefRoutee}
+
 import spray.can.server.UHttp
-import spray.can.websocket
-import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame }
+import spray.can.{Http, websocket}
+import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
+import spray.can.websocket.{UpgradedToWebSocket, FrameCommandFailed}
 import spray.http.HttpRequest
-import spray.can.websocket.{ UpgradedToWebSocket, FrameCommandFailed }
 import spray.routing.HttpServiceActor
 import spray.json._
 import DefaultJsonProtocol._
-import akka.io.Tcp.{ConnectionClosed, PeerClosed, ConfirmedClosed}
-import akka.routing.ActorRefRoutee
-import akka.routing.Router
+
+import scala.concurrent.{Await, Future}
+import akka.util.Timeout
+import akka.pattern.ask
+import scala.concurrent.duration._
 
 // case class ForwardFrame(frame: Frame)
 
 object SimpleServer extends App with MySslConfiguration {
+// object SimpleServer extends MySslConfiguration {
 
   final case class Push(msg: String)
   case class ForwardFrame(frame: Frame)
@@ -76,20 +81,19 @@ object SimpleServer extends App with MySslConfiguration {
             sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
 
           case "USERNAME"::username::_ =>
-            // println("[SERVER] new user: "+username)
+            // println("[SERVER] new user: $username")
             clients(sender) = username
             sender ! Push("ACCEPTED:"+username)
             clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
 
           case "RESET"::_ =>
             sender ! Push("SRESET:")
-            // clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
             clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
             paintbuffer.clear()
 
           case "CHAT"::message::_ =>
             val m = "CHAT:"+clients(sender)+":"+message
-            // println("broadcasting chat: "+m)
+            // println("broadcasting chat: $m")
             clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
           case _ =>
@@ -164,51 +168,26 @@ object SimpleServer extends App with MySslConfiguration {
       runRoute {
         path(""){
           getFromResource("index.html")
-        }~
+        } ~
         getFromResourceDirectory(".")
       }
     }
   }
 
-  class ServerManager extends Actor {
-
-    implicit val system = context.system
-    import system.dispatcher
-
-    override def receive: Receive = {
-      case ("start", port:Int) =>
-        val server = system.actorOf(WebSocketServer.props(), "server")
-        IO(UHttp) ! Http.Bind(server, "0.0.0.0", port)
-
-      case Http.Bound(x) =>
-        println("server listening on "+x)
-
-      case x: Http.CommandFailed =>
-        println("CommandFailed! (probably couldn't initialize server): "+x)
-
-      case "stop" =>
-        println("server manager stopping")
-
-      case x =>
-        println("unknown message delivered to SERVER MANAGER... (maybe CONFIRMED closed??): "+x)
-    }
+  val system = ActorSystem("paintchat-system")
+  val server = system.actorOf(WebSocketServer.props(), "paintchat-server")
+  implicit val timeout = Timeout(1 seconds)
+  val bind_future = ask(IO(UHttp)(system), Http.Bind(server, "0.0.0.0", 8080))
+  val bind_result = Await.result(bind_future, timeout.duration)
+  bind_result match {
+    case Http.Bound(x) =>
+      scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
+    case x: Http.CommandFailed =>
+      println("CommandFailed! (probably couldn't initialize server): $x")
   }
 
-  def doMain() {
-    implicit val system = ActorSystem()
-    // import system.dispatcher
+  println("shutting down server")
+  system.shutdown()
+  system.awaitTermination()
 
-    // val messageRouter: ActorRef = system.actorOf(BroadcastGroup([]).props(), "messageRouter")
-
-    val serverManager: ActorRef = system.actorOf(Props[ServerManager], "servermanager")
-    serverManager ! ("start", 8080)
-
-    readLine("Hit ENTER to exit ...\n")
-    println("shutting down server")
-    serverManager ! "stop"
-    system.shutdown()
-    system.awaitTermination()
-  }
-
-  doMain()
 }
