@@ -14,7 +14,7 @@ object Benchmarks extends App {
   var lastReceived : Long = 0
   var delayArray = Array.ofDim[Long](numberClients, numberTestPackets)
 
-  class TestClient(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://localhost:8080/"), new Draft_17){
+  class TestClient(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://colab-sbx-87.oit.duke.edu:8080/"), new Draft_17){
     override def onMessage(message: String): Unit = {
       //Thread.sleep(delay); - no forced delay for now
       val timeReceived = System.currentTimeMillis
