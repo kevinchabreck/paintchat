@@ -17,7 +17,8 @@ import akka.routing.Router
 
 // case class ForwardFrame(frame: Frame)
 
-object SimpleServer extends App with MySslConfiguration {
+// object SimpleServer extends App with MySslConfiguration {
+object SimpleServer {
 
   final case class Push(msg: String)
   case class ForwardFrame(frame: Frame)
