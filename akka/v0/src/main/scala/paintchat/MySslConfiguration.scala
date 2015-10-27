@@ -1,4 +1,4 @@
-package spray.can.websocket.examples
+package paintchat
 
 import java.security.{ SecureRandom, KeyStore }
 import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
