@@ -6,7 +6,7 @@ version := "1.0"
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= {
-  val akkaHttpVersion = "1.0-RC4"
+  val akkaHttpVersion = "1.0"
   Seq(
     "io.spray" %% "spray-can" % "1.3.3",
     "com.wandoulabs.akka" %% "spray-websocket" % "0.1.4",

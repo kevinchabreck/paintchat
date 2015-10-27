@@ -30,7 +30,9 @@ object Server extends App {
 
   val route = {
     pathEndOrSingleSlash {
-      handleWebsocketMessages(connectionManager)~
+      // handleWebsocketMessages(connectionManager)
+      // handleWebsocketMessages(ChatRooms.findOrCreate(chatId).websocketFlow(userName))
+      handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
       getFromResource("www/index.html")
     } ~
     getFromResourceDirectory("www")
@@ -38,7 +40,7 @@ object Server extends App {
 
   val connectionManager: Flow[Message, Message, _] = Flow[Message].map {
     case TextMessage.Strict(txt) =>
-      println(txt)
+      println(s"$txt")
       TextMessage("ECHO: " + txt)
     case _ => TextMessage("Message type unsupported")
   }
@@ -59,6 +61,18 @@ object Server extends App {
 
 }
 
+object ChatRooms {
+  var chatRooms: Map[Int, ChatRoom] = Map.empty[Int, ChatRoom]
+
+  def findOrCreate(number: Int)(implicit actorSystem: ActorSystem): ChatRoom = chatRooms.getOrElse(number, createNewChatRoom(number))
+
+  private def createNewChatRoom(number: Int)(implicit actorSystem: ActorSystem): ChatRoom = {
+    val chatroom = ChatRoom(number)
+    chatRooms += number -> chatroom
+    chatroom
+  }
+}
+
 object ChatRoom {
   def apply(roomId: Int)(implicit actorSystem: ActorSystem) = new ChatRoom(roomId, actorSystem)
 }
@@ -66,7 +80,10 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
 
   private[this] val chatRoomActor = actorSystem.actorOf(Props(classOf[ChatRoomActor], roomId))
 
-  def websocketFlow(user: String): Flow[Message, Message, _] =
+  val user = "user"
+  // def websocketFlow(user: String): Flow[Message, Message, _] =
+  // def websocketFlow(connection: ActorRef): Flow[Message, Message, _] =
+  def websocketFlow: Flow[Message, Message, _] =
     Flow(Source.actorRef[ChatMessage](bufferSize = 5, OverflowStrategy.fail)) {
       implicit builder =>
         chatSource => //source provideed as argument
@@ -74,13 +91,18 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           //flow used as input it takes Message's
           val fromWebsocket = builder.add(
             Flow[Message].collect {
-              case TextMessage.Strict(txt) => IncomingMessage(user, txt)
-            })
+              case TextMessage.Strict(txt) =>
+                println(s"[$user] -> $txt")
+                IncomingMessage(user, txt)
+            }
+          )
 
           //flow used as output, it returns Message's
           val backToWebsocket = builder.add(
             Flow[ChatMessage].map {
-              case ChatMessage(author, text) => TextMessage(s"[$author]: $text")
+              case ChatMessage(author, text) =>
+                println(s"[$user] <- [$author]: $text")
+                TextMessage(s"[$author]: $text")
             }
           )
 
