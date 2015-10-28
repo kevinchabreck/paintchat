@@ -18,7 +18,6 @@ import spray.routing.HttpServiceActor
 import spray.json._
 import DefaultJsonProtocol._
 
-// final case class Push(msg: String)
 case class Push(msg: String)
 case class ForwardFrame(frame: Frame)
 
@@ -34,14 +33,10 @@ object Server extends App with MySslConfiguration {
 
   implicit val timeout = Timeout(1 seconds)
   val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
-  // val timeout = Timeout(1 seconds)
-  // val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port), timeout)
   val bind_result = Await.result(bind_future, timeout.duration)
   bind_result match {
-    case Http.Bound(x) =>
-      scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
-    case x: Http.CommandFailed =>
-      println(s"Error: Failed to bind to $interface:$port: $x")
+    case Http.Bound(x) => scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
+    case x: Http.CommandFailed => println(s"Error: Failed to bind to $interface:$port: $x")
   }
   println("shutting down server")
   system.shutdown()
@@ -58,18 +53,13 @@ class Server extends Actor with ActorLogging {
       context.watch(conn)
       sender ! Http.Register(conn)
 
-    case UpgradedToWebSocket =>
-      println("[parent] UpgradedToWebSocket")
-      clients(sender) = ""
+    case UpgradedToWebSocket => clients(sender) = ""
 
-    case x: ConnectionClosed =>
-      clients -= sender
+    case x: ConnectionClosed => clients -= sender
 
-    case x: Terminated =>
-      clients -=(sender)
+    case x: Terminated => clients -= sender
 
-    case ServerStatus =>
-      sender ! ServerInfo(clients.size)
+    case ServerStatus => sender ! ServerInfo(clients.size)
 
     case msg: TextFrame =>
       val _ = msg.payload.utf8String.split(":",2).toList match {
@@ -105,7 +95,6 @@ class Server extends Actor with ActorLogging {
 
 }
 
-// these are actors - one for each connection
 object WebSocketWorker {
   def props(serverConnection: ActorRef, parent: ActorRef) = Props(classOf[WebSocketWorker], serverConnection, parent)
 }
@@ -115,42 +104,33 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
 
   def businessLogic: Receive = {
 
-    // uncomment if running echo benchmarks
-    // case x @ (_: BinaryFrame | _: TextFrame) =>
-    //   sender ! x
+    case msg: TextFrame => parent ! msg
 
-    case msg: TextFrame =>
-      parent ! msg
+    case UpgradedToWebSocket => parent ! UpgradedToWebSocket
 
-    case ForwardFrame(f) =>
-      // println(s"[WORKER] recieved a ForwardFrame: ${f.payload.utf8String}")
-      send(f)
+    case ForwardFrame(f) => send(f)
 
-    case Push(msg) =>
-      // println(s"[WORKER] recieved a Push: $msg")
-      send(TextFrame(msg))
+    case Push(msg) => send(TextFrame(msg))
 
-    case x: FrameCommandFailed =>
-      println(s"frame command failed: $x")
+    case x: FrameCommandFailed => println(s"frame command failed: $x")
 
-    // should never happen... right?
-    case x: HttpRequest =>
-      println(s"[WORKER] got an http request: $x")
-
-    // onClose
     case x: ConnectionClosed =>
-      println(s"[WORKER $self] ConnectionClosed")
       parent ! x
       context.stop(self)
 
-    case ConfirmedClosed =>
-      println(s"[WORKER $self] ConfirmedClosed")
+    case ConfirmedClosed => println(s"[WORKER $self] ConfirmedClosed")
 
-    case UpgradedToWebSocket =>
-      println(s"[WORKER $self] UpgradedToWebSocket")
+    case x => println("[WORKER] recieved unknown message: $x")
+  }
 
-    case x =>
-      println("[WORKER] recieved unknown message: $x")
+  def status: String = {
+    implicit val timeout = Timeout(1 seconds)
+    val f = ask(parent, ServerStatus).mapTo[ServerInfo]
+    val ServerInfo(connections) = Await.result(f, timeout.duration)
+    val status =  s"{status: up,"+
+                  s" uptime: ${context.system.uptime},"+
+                  s" connections: $connections}"
+    return status
   }
 
   def businessLogicNoUpgrade: Receive = {
@@ -158,16 +138,8 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
       pathEndOrSingleSlash {
         getFromResource("www/index.html")
       } ~
-      path("health") {
-        complete("{status: up}")
-      } ~
       path("status") {
-        implicit val timeout = Timeout(1 seconds)
-        val f = ask(parent, ServerStatus).mapTo[ServerInfo]
-        val ServerInfo(connections) = Await.result(f, timeout.duration)
-        complete(s"{status: up,"+
-                 s" uptime: ${context.system.uptime}s,"+
-                 s" connections: $connections}")
+        complete(status)
       } ~
       getFromResourceDirectory("www")
     }

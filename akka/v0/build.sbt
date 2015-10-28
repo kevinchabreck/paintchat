@@ -1,5 +1,5 @@
 
-name := "PaintChat v0 (Spray implementation)"
+name := "PaintChat v0 (Spray, single node)"
 
 version := "1.0"
 
