@@ -18,20 +18,30 @@ import spray.routing.HttpServiceActor
 import spray.json._
 import DefaultJsonProtocol._
 
-final case class Push(msg: String)
+// final case class Push(msg: String)
+case class Push(msg: String)
 case class ForwardFrame(frame: Frame)
+
+case object ServerStatus
+case class ServerInfo(connections: Int)
 
 object Server extends App with MySslConfiguration {
   implicit val system = ActorSystem("paintchat-system")
   val server = system.actorOf(Props(classOf[Server]), "paintchat-server")
+  val config = system.settings.config
+  val interface = config.getString("app.interface")
+  val port = config.getInt("app.port")
+
   implicit val timeout = Timeout(1 seconds)
-  val bind_future = ask(IO(UHttp), Http.Bind(server, "0.0.0.0", 8080))
+  val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
+  // val timeout = Timeout(1 seconds)
+  // val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port), timeout)
   val bind_result = Await.result(bind_future, timeout.duration)
   bind_result match {
     case Http.Bound(x) =>
       scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
     case x: Http.CommandFailed =>
-      println("Error: Failed to bind to portCommandFailed! (probably couldn't initialize server): $x")
+      println(s"Error: Failed to bind to $interface:$port: $x")
   }
   println("shutting down server")
   system.shutdown()
@@ -49,6 +59,7 @@ class Server extends Actor with ActorLogging {
       sender ! Http.Register(conn)
 
     case UpgradedToWebSocket =>
+      println("[parent] UpgradedToWebSocket")
       clients(sender) = ""
 
     case x: ConnectionClosed =>
@@ -56,6 +67,9 @@ class Server extends Actor with ActorLogging {
 
     case x: Terminated =>
       clients -=(sender)
+
+    case ServerStatus =>
+      sender ! ServerInfo(clients.size)
 
     case msg: TextFrame =>
       val _ = msg.payload.utf8String.split(":",2).toList match {
@@ -143,6 +157,17 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
     runRoute {
       pathEndOrSingleSlash {
         getFromResource("www/index.html")
+      } ~
+      path("health") {
+        complete("{status: up}")
+      } ~
+      path("status") {
+        implicit val timeout = Timeout(1 seconds)
+        val f = ask(parent, ServerStatus).mapTo[ServerInfo]
+        val ServerInfo(connections) = Await.result(f, timeout.duration)
+        complete(s"{status: up,"+
+                 s" uptime: ${context.system.uptime}s,"+
+                 s" connections: $connections}")
       } ~
       getFromResourceDirectory("www")
     }
