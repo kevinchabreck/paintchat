@@ -11,8 +11,8 @@ import scala.concurrent.duration._
 
 import spray.can.server.UHttp
 import spray.can.{Http, websocket}
-import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
 import spray.can.websocket.{UpgradedToWebSocket, FrameCommandFailed}
+import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
 import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
 import spray.json._
@@ -31,7 +31,7 @@ object Server extends App with MySslConfiguration {
     case Http.Bound(x) =>
       scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
     case x: Http.CommandFailed =>
-      println("CommandFailed! (probably couldn't initialize server): $x")
+      println("Error: Failed to bind to portCommandFailed! (probably couldn't initialize server): $x")
   }
   println("shutting down server")
   system.shutdown()
@@ -43,16 +43,19 @@ class Server extends Actor with ActorLogging {
   val paintbuffer = new collection.mutable.ListBuffer[String]
 
   def receive = {
-    // when a new connection comes in we register a WebSocketConnection actor as the per connection handler
     case Http.Connected(remoteAddress, localAddress) =>
-      // println("new connection "+remoteAddress+" - creating new actor")
       val conn = context.actorOf(WebSocketWorker.props(sender, self))
       context.watch(conn)
       sender ! Http.Register(conn)
 
     case UpgradedToWebSocket =>
       clients(sender) = ""
-      print("connected clients: "+clients.size+"                    \r")
+
+    case x: ConnectionClosed =>
+      clients -= sender
+
+    case x: Terminated =>
+      clients -=(sender)
 
     case msg: TextFrame =>
       val _ = msg.payload.utf8String.split(":",2).toList match {
@@ -65,7 +68,6 @@ class Server extends Actor with ActorLogging {
           sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
 
         case "USERNAME"::username::_ =>
-          // println("[SERVER] new user: $username")
           clients(sender) = username
           sender ! Push("ACCEPTED:"+username)
           clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
@@ -77,20 +79,11 @@ class Server extends Actor with ActorLogging {
 
         case "CHAT"::message::_ =>
           val m = "CHAT:"+clients(sender)+":"+message
-          // println("broadcasting chat: $m")
           clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
         case _ =>
           println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
       }
-
-    case x: ConnectionClosed =>
-      clients -= sender
-      print("connected clients: "+clients.size+"                    \r")
-
-    case x: Terminated =>
-      clients -=(sender)
-      print("connected clients: "+clients.size+"                    \r")
 
     case x =>
       println("[SERVER] recieved unknown message: "+x)
@@ -116,34 +109,34 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
       parent ! msg
 
     case ForwardFrame(f) =>
-      // println("[WORKER] recieved a ForwardFrame: "+f.payload.utf8String)
+      // println(s"[WORKER] recieved a ForwardFrame: ${f.payload.utf8String}")
       send(f)
 
     case Push(msg) =>
-      // println("[WORKER] recieved a Push: "+msg)
+      // println(s"[WORKER] recieved a Push: $msg")
       send(TextFrame(msg))
 
     case x: FrameCommandFailed =>
-      // log.error("frame command failed", x)
+      println(s"frame command failed: $x")
 
     // should never happen... right?
     case x: HttpRequest =>
-      // println("[WORKER] got an http request: "+x)
+      println(s"[WORKER] got an http request: $x")
 
     // onClose
     case x: ConnectionClosed =>
-      // println("[WORKER] connection closing...")
+      println(s"[WORKER $self] ConnectionClosed")
       parent ! x
       context.stop(self)
 
     case ConfirmedClosed =>
-      // println("[WORKER] connection CONFIRMED closed")
+      println(s"[WORKER $self] ConfirmedClosed")
 
     case UpgradedToWebSocket =>
-      // println("[WORKER] upgraded to websocket - sender: "+sender)
+      println(s"[WORKER $self] UpgradedToWebSocket")
 
     case x =>
-      println("[WORKER] recieved unknown message: "+x)
+      println("[WORKER] recieved unknown message: $x")
   }
 
   def businessLogicNoUpgrade: Receive = {

@@ -50,7 +50,7 @@ object Server extends App {
   val port = config.getInt("app.port")
 
   val binding = Http().bindAndHandle(route, interface, port)
-  println(s"Server is now online at http://$interface:$port\nPress RETURN to stop...")
+  println(s"server listening on http://$interface:$port (press ENTER to exit)")
 
   StdIn.readLine()
 
