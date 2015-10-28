@@ -1,5 +1,6 @@
 package benchmarks
 
+import com.typesafe.config.ConfigFactory
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.{Draft_17}
 import org.java_websocket.handshake.ServerHandshake
@@ -8,13 +9,18 @@ import java.util.Random
 
 object Benchmarks extends App {
 
-  val numberClients = 10
-  val numberTestPackets = 10
+  val configuration = ConfigFactory.load("application.conf")
+  val numberClients = configuration.getInt("app.numberClients")
+  val numberTestPackets = configuration.getInt("app.numberTestPackets")
+  val connectionSitePort = configuration.getString("app.connectionSitePort")
 
+  // used to determine when the last packet was recieved to delay tests while traffic is going on
   var lastReceived : Long = 0
+  
+  // store the results of all the tests so that the information can be examined
   var delayArray = Array.ofDim[Long](numberClients, numberTestPackets)
 
-  class TestClient(id: Int, delay: Long) extends WebSocketClient(new URI(s"ws://colab-sbx-87.oit.duke.edu:8080/"), new Draft_17){
+  class TestClient(id: Int, delay: Long) extends WebSocketClient(new URI(connectionSitePort), new Draft_17){
     override def onMessage(message: String): Unit = {
       //Thread.sleep(delay); - no forced delay for now
       val timeReceived = System.currentTimeMillis
