@@ -30,8 +30,6 @@ object Server extends App {
 
   val route = {
     pathEndOrSingleSlash {
-      // handleWebsocketMessages(connectionManager)
-      // handleWebsocketMessages(ChatRooms.findOrCreate(chatId).websocketFlow(userName))
       handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
       getFromResource("www/index.html")
     } ~
