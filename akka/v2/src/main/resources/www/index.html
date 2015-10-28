@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="collaborative doodling powered by WebSockets!">
+    <meta name="author" content="Kevin Chabreck">
+    <!-- <link rel="icon" href="favicon.ico"> -->
+    <title>draw.ws</title>
+
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.6.2/spectrum.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.6.1/spectrum.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/alertify.js/0.3.0/alertify.min.js"></script>
+
+    <link rel="stylesheet" href="js/alertify/alertify.core.css">
+    <link rel="stylesheet" href="js/alertify/alertify.bootstrap.css">
+
+    <script type="text/javascript" src="js/noty/jquery.noty.packaged.min.js"></script>
+    <link rel="stylesheet" href="js/animate/animate.css">
+
+    <!-- uncomment if CDNs unavailable -->
+    <!--
+    <link rel="stylesheet" href="js/bootstrap/bootstrap.min.css">
+    <script src="js/jquery/jquery.min.js"></script>
+    <script src="js/spectrum/spectrum.min.js"></script>
+    <link rel="stylesheet" href="js/spectrum/spectrum.min.css">
+    <script src="js/alertify/alertify.min.js"></script>
+     -->
+    <!-- custom stylings and javascript -->
+    <link rel="stylesheet" href="paint.css">
+    <script src="paint.js"></script>
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="container">
+
+      <div class="header clearfix">
+        <h1>draw.ws</h1>
+      </div>
+
+      <!-- <div id="canvasPanel" class="panel panel-default"> -->
+      <div id="canvasPanel" class="panel panel-default">
+        <div id="canvasPanelBody" class="panel-body">
+      <!-- <div class="row"> -->
+          <div id="canvasSpace" ></div>
+      <!-- </div> -->
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-lg-12">
+          <!-- <div class="row">
+            <div id="canvasSpace"></div>
+          </div> -->
+
+          <!-- <div id="chatSpace" class="row row-centered"> -->
+          <div id="chatSpace" style="display:none" class="row">
+            <!-- <div class="col-lg-6 col-centered input-group"> -->
+            <div class="col-lg-6 col-centered">
+              <div class="input-group">
+                <input id="chatInput" type="text" class="form-control" placeholder="say something!">
+                <span class="input-group-btn">
+                  <button id="sendChatButton" class="btn btn-default" type="button">send</button>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div id="toolSpace" class="row row-centered">
+            <div class="btn-group" role="group" aria-label="...">
+              <button id="colorPalette" type="button" class="active toolbutton btn btn-default dropdown-toggle"
+                      data-toggle="tooltip" data-placement="top" title="Draw">
+                <span type='span' class="tool glyphicon glyphicon-pencil"></span>
+              </button>
+              <button id="sizeMinus" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Decrease brush size">
+                <span type='span' class="tool glyphicon glyphicon-minus-sign"></span>
+              </button>
+              <button id="sizePlus" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Increase brush size">
+                <span type='span' class="tool glyphicon glyphicon-plus-sign"></span>
+              </button>
+              <button id="selectEraser" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Erase">
+                <span type='span' class="tool glyphicon glyphicon-erase"></span>
+              </button>
+              <button id="selectChat" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Chat">
+                <span type='span' class="tool glyphicon glyphicon-comment"></span>
+              </button>
+              <button id="resetCanvas" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Reset">
+                <span type='span' class="tool glyphicon glyphicon-trash"></span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="footer">
+        <p>&copy; Kevin Chabreck 2015</p>
+      </footer>
+    </div> <!-- /container -->
+  </body>
+</html>
