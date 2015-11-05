@@ -123,16 +123,6 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
     case x => println("[WORKER] recieved unknown message: $x")
   }
 
-  def status: String = {
-    implicit val timeout = Timeout(1 seconds)
-    val f = ask(parent, ServerStatus).mapTo[ServerInfo]
-    val ServerInfo(connections) = Await.result(f, timeout.duration)
-    val status =  s"{status: up,"+
-                  s" uptime: ${context.system.uptime},"+
-                  s" connections: $connections}"
-    return status
-  }
-
   def businessLogicNoUpgrade: Receive = {
     runRoute {
       pathEndOrSingleSlash {
@@ -143,5 +133,17 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
       } ~
       getFromResourceDirectory("www")
     }
+  }
+
+  def status: String = {
+    implicit val timeout = Timeout(1 seconds)
+    val f = ask(parent, ServerStatus).mapTo[ServerInfo]
+    val ServerInfo(connections) = Await.result(f, timeout.duration)
+    var status = "{"
+    status += "status: up, "
+    status += s"uptime: ${context.system.uptime}, "
+    status += s"connections: $connections"
+    status += "}"
+    return status
   }
 }
