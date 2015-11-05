@@ -134,6 +134,8 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
 
 class ChatRoomActor(roomId: Int) extends Actor {
   var participants: Map[String, ActorRef] = Map.empty[String, ActorRef]
+  val clients = collection.mutable.Map[ActorRef, String]()
+  val paintbuffer = new collection.mutable.ListBuffer[String]
 
   override def receive: Receive = {
     case UserJoined(name, actorRef) =>
@@ -146,9 +148,63 @@ class ChatRoomActor(roomId: Int) extends Actor {
       broadcast(SystemMessage(s"User $name left channel[$roomId]"))
       participants -= name
 
-    case msg: IncomingMessage =>
-      broadcast(msg)
+    //case msg: IncomingMessage =>
+    case IncomingMessage(user, message) =>
+      //message match {
+        //case msg.message
+    //  broadcast(msg)
+  /*}
+
+ def receive = {
+    case Http.Connected(remoteAddress, localAddress) =>
+      val conn = context.actorOf(WebSocketWorker.props(sender, self))
+      context.watch(conn)
+      sender ! Http.Register(conn)
+
+    case UpgradedToWebSocket => clients(sender) = ""
+
+    case x: ConnectionClosed => clients -= sender
+
+    case x: Terminated => clients -= sender
+
+    case ServerStatus => sender ! ServerInfo(clients.size)*/
+
+    //case msg: TextFrame =>
+      val _ = message./*payload.utf8String.*/split(":",2).toList match {
+
+        case "PAINT"::data::_ =>
+          paintbuffer += data
+          broadcast(IncomingMessage(user,message))
+          //clients.keys.foreach(_.forward(ForwardFrame(message)))
+      //println("Asked for paintbuffer")
+
+        case "GETBUFFER"::_ =>
+          //sender ! ChatMessage(user, /*Push(*/"PAINTBUFFER:"+paintbuffer.toList.toJson)
+          println("Asker for get buffer")
+
+        case "USERNAME"::username::_ =>
+          //clients(sender) = username
+          //sender ! Push("ACCEPTED:"+username)
+          //clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
+      println("Username")
+
+        case "RESET"::_ =>
+          //sender ! Push("SRESET:")
+          //clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
+          paintbuffer.clear()
+
+        case "CHAT"::message::_ =>
+          val m = "CHAT:"+clients(sender)+":"+message
+          //clients.keys.filter(_ != sender).foreach(_ ! Push(m))
+     
+        case _ =>
+          println("[SERVER] recieved unrecognized textframe: "/*+msg.payload.utf8String*/)
+      }
+
+    case x =>
+      println("[SERVER] recieved unknown message: "+x)
   }
+
 
   implicit def chatEventToChatMessage(event: IncomingMessage): ChatMessage = ChatMessage(event.sender, event.message)
 
