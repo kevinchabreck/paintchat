@@ -8,6 +8,7 @@ import akka.stream.scaladsl.{Flow, Source, Sink, Merge}
 // import akka.stream.scaladsl._
 import akka.stream.scaladsl.FlowGraph.Implicits._
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import play.api.libs.json.Json
 
 import scala.language.implicitConversions
 import scala.io.StdIn
@@ -151,8 +152,8 @@ class ChatRoomActor(roomId: Int) extends Actor {
     //case msg: IncomingMessage =>
     case IncomingMessage(user, message) =>
       //message match {
-        //case msg.message
-    //  broadcast(msg)
+      //case msg.message
+      //broadcast(msg)
   /*}
 
  def receive = {
@@ -170,23 +171,26 @@ class ChatRoomActor(roomId: Int) extends Actor {
     case ServerStatus => sender ! ServerInfo(clients.size)*/
 
     //case msg: TextFrame =>
-      val _ = message./*payload.utf8String.*/split(":",2).toList match {
+      // val _ = message./*payload.utf8String.*/split(":",2).toList match {
+      val _ = message.split(":",2).toList match {
 
         case "PAINT"::data::_ =>
           paintbuffer += data
           broadcast(IncomingMessage(user,message))
           //clients.keys.foreach(_.forward(ForwardFrame(message)))
-      //println("Asked for paintbuffer")
+          //println("Asked for paintbuffer")
 
         case "GETBUFFER"::_ =>
           //sender ! ChatMessage(user, /*Push(*/"PAINTBUFFER:"+paintbuffer.toList.toJson)
           println("Asker for get buffer")
+          sender ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
+          println(s"sending buffer: ${Json.toJson(paintbuffer)}")
 
         case "USERNAME"::username::_ =>
           //clients(sender) = username
           //sender ! Push("ACCEPTED:"+username)
           //clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
-      println("Username")
+          println("Username")
 
         case "RESET"::_ =>
           //sender ! Push("SRESET:")
@@ -196,7 +200,7 @@ class ChatRoomActor(roomId: Int) extends Actor {
         case "CHAT"::message::_ =>
           val m = "CHAT:"+clients(sender)+":"+message
           //clients.keys.filter(_ != sender).foreach(_ ! Push(m))
-     
+
         case _ =>
           println("[SERVER] recieved unrecognized textframe: "/*+msg.payload.utf8String*/)
       }
