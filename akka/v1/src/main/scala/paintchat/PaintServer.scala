@@ -79,7 +79,7 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
   private[this] val chatRoomActor = actorSystem.actorOf(Props(classOf[ChatRoomActor], roomId))
 
   val user = "user"
-  // def websocketFlow(user: String): Flow[Message, Message, _] =
+  //def websocketFlow(user: String): Flow[Message, Message, _] =
   // def websocketFlow(connection: ActorRef): Flow[Message, Message, _] =
   def websocketFlow: Flow[Message, Message, _] =
     Flow(Source.actorRef[ChatMessage](bufferSize = 5, OverflowStrategy.fail)) {
@@ -100,7 +100,7 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
             Flow[ChatMessage].map {
               case ChatMessage(author, text) =>
                 println(s"[$user] <- [$author]: $text")
-                TextMessage(s"[$author]: $text")
+                TextMessage(/*s"[$author]: $text"*/s"$text")
             }
           )
 
