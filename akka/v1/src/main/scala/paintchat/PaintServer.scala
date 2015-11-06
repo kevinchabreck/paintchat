@@ -15,12 +15,13 @@ import scala.io.StdIn
 
 case class ChatMessage(sender: String, text: String)
 object SystemMessage {
-  def apply(text: String) = ChatMessage("System", text)
+  def apply(text: String) = ChatMessage("System", "INFO:"+text)
 }
 sealed trait ChatEvent
 case class UserJoined(name: String, userActor: ActorRef) extends ChatEvent
 case class UserLeft(name: String) extends ChatEvent
 case class IncomingMessage(sender: String, message: String) extends ChatEvent
+// case class IncomingMessage(sender: ActorRef, message: String) extends ChatEvent
 
 object Server extends App {
 
@@ -37,12 +38,12 @@ object Server extends App {
     getFromResourceDirectory("www")
   }
 
-  val connectionManager: Flow[Message, Message, _] = Flow[Message].map {
-    case TextMessage.Strict(txt) =>
-      println(s"$txt")
-      TextMessage("ECHO: " + txt)
-    case _ => TextMessage("Message type unsupported")
-  }
+  // val connectionManager: Flow[Message, Message, _] = Flow[Message].map {
+  //   case TextMessage.Strict(txt) =>
+  //     println(s"$txt")
+  //     TextMessage("ECHO: " + txt)
+  //   case _ => TextMessage("Message type unsupported")
+  // }
 
   val config = actorSystem.settings.config
   val interface = config.getString("app.interface")
@@ -93,6 +94,9 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
               case TextMessage.Strict(txt) =>
                 println(s"[$user] -> $txt")
                 IncomingMessage(user, txt)
+                // IncomingMessage(Source.actorRef, txt)
+                // IncomingMessage(chatSource, txt)
+                // IncomingMessage(_, txt)
             }
           )
 
@@ -151,6 +155,7 @@ class ChatRoomActor(roomId: Int) extends Actor {
 
     //case msg: IncomingMessage =>
     case IncomingMessage(user, message) =>
+    // case IncomingMessage(sender, message) =>
       //message match {
       //case msg.message
       //broadcast(msg)
@@ -201,8 +206,8 @@ class ChatRoomActor(roomId: Int) extends Actor {
           val m = "CHAT:"+clients(sender)+":"+message
           //clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
-        case _ =>
-          println("[SERVER] recieved unrecognized textframe: "/*+msg.payload.utf8String*/)
+        case x =>
+          println(s"[SERVER] recieved unrecognized update: $x")
       }
 
     case x =>
