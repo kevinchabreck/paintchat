@@ -32,6 +32,7 @@ object Server extends App {
 
   val route = {
     pathEndOrSingleSlash {
+      // handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
       handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
       getFromResource("www/index.html")
     } ~
@@ -88,15 +89,19 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
       implicit builder =>
         chatSource => //source provideed as argument
 
+          //Materialized value of Actor who sit in chatroom
+          val actorAsSource = builder.materializedValue.map(actor => UserJoined(user, actor))
+
           //flow used as input it takes Message's
           val fromWebsocket = builder.add(
             Flow[Message].collect {
               case TextMessage.Strict(txt) =>
                 println(s"[$user] -> $txt")
-                IncomingMessage(user, txt)
-                // IncomingMessage(Source.actorRef, txt)
+                // IncomingMessage(user, txt)
+                IncomingMessage(Source.actorRef, txt)
                 // IncomingMessage(chatSource, txt)
-                // IncomingMessage(_, txt)
+                println(s"chatSource: $chatSource")
+                // IncomingMessage(actorAsSource, txt)
             }
           )
 
@@ -116,7 +121,7 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           val merge = builder.add(Merge[ChatEvent](2))
 
           //Materialized value of Actor who sit in chatroom
-          val actorAsSource = builder.materializedValue.map(actor => UserJoined(user, actor))
+          // val actorAsSource = builder.materializedValue.map(actor => UserJoined(user, actor))
 
           //Message from websocket is converted into IncommingMessage and should be send to each in room
           fromWebsocket ~> merge.in(0)
@@ -187,7 +192,7 @@ class ChatRoomActor(roomId: Int) extends Actor {
 
         case "GETBUFFER"::_ =>
           //sender ! ChatMessage(user, /*Push(*/"PAINTBUFFER:"+paintbuffer.toList.toJson)
-          println("Asker for get buffer")
+          println(s"${sender.path.name} Asker for get buffer")
           sender ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
           println(s"sending buffer: ${Json.toJson(paintbuffer)}")
 
