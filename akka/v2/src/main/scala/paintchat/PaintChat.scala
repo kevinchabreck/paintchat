@@ -5,8 +5,6 @@ import akka.io.IO
 import akka.io.Tcp.{ConnectionClosed, ConfirmedClosed}
 import akka.util.Timeout
 import akka.pattern.ask
-// import akka.cluster.Cluster
-// import akka.cluster.ClusterEvent._
 import akka.cluster.{Cluster, ClusterEvent}
 
 import scala.concurrent.Await
@@ -18,18 +16,14 @@ import spray.can.websocket.{UpgradedToWebSocket, FrameCommandFailed}
 import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
 import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
-import spray.json._
-import DefaultJsonProtocol._
-import play.api.libs.json.Json
 
-// case class Push(msg: String)
-// case class ForwardFrame(frame: Frame)
+import play.api.libs.json.Json
+import com.typesafe.config.ConfigFactory
 
 sealed trait Status
 case object ServerStatus extends Status
 case class ServerInfo(connections: Int) extends Status
 case object ClusterStatus extends Status
-// case class ClusterInfo(connections: Int) extends Status
 
 sealed trait ServerMessage
 case class Push(msg: String) extends ServerMessage
@@ -38,32 +32,46 @@ case class UserJoin(user: String) extends ServerMessage
 case class UserLeft(user: String) extends ServerMessage
 
 object PaintChat extends App with MySslConfiguration {
-  // implicit val system = ActorSystem("paintchat-system")
-  // implicit val system = ActorSystem("PaintChatSystem")
-  // val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).withFallback(ConfigFactory.load())
-  implicit val system = ActorSystem("ClusterSystem")
-  val config = system.settings.config
-  val server = system.actorOf(Props(classOf[Server]), "paintchat-server")
-  val interface = config.getString("app.interface")
-  val defaultport = config.getInt("app.port")
 
-  def bindToPort(port: Int): Unit = {
+  val config = ConfigFactory.load()
+  val interface = config.getString("app.interface")
+  val default_http_port = config.getInt("app.port")
+  val default_tcp_port = config.getInt("akka.remote.netty.tcp.port")
+
+  // helper method for local cluster testing
+  def bindTCPPort(port: Int): ActorSystem = {
+    try {
+      val config = ConfigFactory.parseString("akka.remote.netty.tcp.port=" + port).withFallback(ConfigFactory.load())
+      return ActorSystem("ClusterSystem", config)
+    } catch {
+      case _ : Throwable =>
+        if (port == default_tcp_port)
+          return bindTCPPort(0)
+        else
+          println(s"Error: TCP port bind failed")
+          return ActorSystem("ClusterSystem")
+    }
+  }
+
+  // helper method for local cluster testing
+  def bindHTTPPort(port: Int): Unit = {
     implicit val timeout = Timeout(1 seconds)
     val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
     val bind_result = Await.result(bind_future, timeout.duration)
     bind_result match {
       case Http.Bound(x) => scala.io.StdIn.readLine(s"server listening on http:/$x (press ENTER to exit)\n")
       case x: Http.CommandFailed =>
-        println(s"Failed to bind to $interface:$port")
-        if (port < defaultport+3) {
-          bindToPort(port+1)
+        if (port < default_http_port+3) {
+          bindHTTPPort(port+1)
         } else {
           println(s"Error: unable to bind to a port")
         }
     }
   }
 
-  bindToPort(defaultport)
+  implicit val system = bindTCPPort(default_tcp_port)
+  val server = system.actorOf(Props(classOf[Server]), "paintchat-server")
+  bindHTTPPort(default_http_port)
   println("shutting down server")
   system.terminate()
   Await.result(system.whenTerminated, Duration.Inf)
@@ -119,7 +127,6 @@ class PaintClusterListener extends Actor with ActorLogging {
     case state: ClusterEvent.CurrentClusterState =>
       println(s"recieved ClusterEvent.CurrentClusterState: $state")
     case ClusterStatus =>
-      println(s"[${self.path}] cluster status: ${Cluster(context.system).state}")
       sender ! Cluster(context.system).state
   }
 }
@@ -141,9 +148,7 @@ class Server extends Actor with ActorLogging {
 
     case _: Terminated => clients -= sender
 
-    case ServerStatus =>
-      // cluster ! ClusterStatus
-      sender ! ServerInfo(clients.size)
+    case ServerStatus => sender ! ServerInfo(clients.size)
 
     case msg: TextFrame =>
       val _ = msg.payload.utf8String.split(":",2).toList match {
