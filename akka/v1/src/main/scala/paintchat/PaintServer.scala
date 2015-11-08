@@ -25,6 +25,8 @@ case class IncomingMessage(sender: String, message: String) extends ChatEvent
 
 object Server extends App {
 
+  var count : Int = 0
+
   import Directives._
 
   implicit val actorSystem = ActorSystem("server-system")
@@ -32,7 +34,8 @@ object Server extends App {
 
   val route = {
     pathEndOrSingleSlash {
-      handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
+      count += 1
+      handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow(count.toString)) ~
       getFromResource("www/index.html")
     } ~
     getFromResourceDirectory("www")
@@ -80,10 +83,11 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
 
   private[this] val chatRoomActor = actorSystem.actorOf(Props(classOf[ChatRoomActor], roomId))
 
-  val user = "user"
+  //println(actorSystem.actorOf())
+
   //def websocketFlow(user: String): Flow[Message, Message, _] =
   // def websocketFlow(connection: ActorRef): Flow[Message, Message, _] =
-  def websocketFlow: Flow[Message, Message, _] =
+  def websocketFlow(user : String): Flow[Message, Message, _] =
     Flow(Source.actorRef[ChatMessage](bufferSize = 5, OverflowStrategy.fail)) {
       implicit builder =>
         chatSource => //source provideed as argument
@@ -188,7 +192,7 @@ class ChatRoomActor(roomId: Int) extends Actor {
         case "GETBUFFER"::_ =>
           //sender ! ChatMessage(user, /*Push(*/"PAINTBUFFER:"+paintbuffer.toList.toJson)
           println("Asker for get buffer")
-          sender ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
+          participants(user) ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
           println(s"sending buffer: ${Json.toJson(paintbuffer)}")
 
         case "USERNAME"::username::_ =>
