@@ -116,9 +116,9 @@ function init(container, width, height) {
         }
         oldX = e.pageX - rect.left;
         oldY = e.pageY - rect.top;
-        console.log("move(): X: "+oldX+" Y: "+oldY);
-        console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
-        console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
+        // console.log("move(): X: "+oldX+" Y: "+oldY);
+        // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
+        // console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
     }
 
     function start(e) {
@@ -440,13 +440,21 @@ function init(container, width, height) {
     }
 
     // determine websocket URI
-    var port = "8080"
-    var wsuri;
-    if (window.location.protocol === "file:") {
-       wsuri = "ws://localhost:"+port;
-    } else {
-       wsuri = "ws://"+window.location.hostname+":"+port;
-    }
+    // var port = "8080"
+    // var wsuri;
+    // console.log("window.location: "+window.location)
+    // console.log("window.location.hostname: "+window.location.hostname)
+    // console.log("window.location.pathname: "+window.location.pathname)
+    // console.log("window.location.href: "+window.location.href)
+    // if (window.location.protocol === "file:") {
+    //    wsuri = "ws://localhost:"+port;
+    // } else {
+    //    wsuri = "ws://"+window.location.hostname+":"+port;
+    // }
+
+    var wsuri = window.location.href.replace("http", "ws");
+    console.log("window.location.href: "+window.location.href)
+    console.log("wsuri: "+wsuri)
 
     // open websocket
     var ws = null;

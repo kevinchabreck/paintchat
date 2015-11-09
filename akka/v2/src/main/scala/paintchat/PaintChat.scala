@@ -5,7 +5,9 @@ import akka.io.IO
 import akka.io.Tcp.{ConnectionClosed, ConfirmedClosed}
 import akka.util.Timeout
 import akka.pattern.ask
-import akka.cluster.{Cluster, ClusterEvent}
+import akka.cluster.{Cluster, ClusterEvent, Member}
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -17,7 +19,7 @@ import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
 import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
 
-import play.api.libs.json.Json
+import play.api.libs.json.{Json, Writes, JsValue}
 import com.typesafe.config.ConfigFactory
 
 sealed trait Status
@@ -30,6 +32,8 @@ case class Push(msg: String) extends ServerMessage
 case class ForwardFrame(frame: Frame) extends ServerMessage
 case class UserJoin(user: String) extends ServerMessage
 case class UserLeft(user: String) extends ServerMessage
+
+case class Update(msg:TextFrame, publisher:ActorRef)
 
 object PaintChat extends App with MySslConfiguration {
 
@@ -116,70 +120,74 @@ class PaintClusterListener extends Actor with ActorLogging {
   }
 
   def receive = {
-    case ClusterEvent.MemberUp(member) =>
-      println(s"Member is Up: ${member.address}")
-    case ClusterEvent.UnreachableMember(member) =>
-      println(s"Member detected as unreachable: ${member}")
-    case ClusterEvent.MemberRemoved(member, previousStatus) =>
-      println(s"Member is Removed: ${member.address} after ${previousStatus}")
-    case event: ClusterEvent.MemberEvent =>
-      println(s"recieved ClusterEvent.MemberEvent: $event")
-    case state: ClusterEvent.CurrentClusterState =>
-      println(s"recieved ClusterEvent.CurrentClusterState: $state")
-    case ClusterStatus =>
-      sender ! Cluster(context.system).state
+    case ClusterEvent.MemberUp(member) => println(s"Member up: ${member.address}")
+
+    case ClusterEvent.UnreachableMember(member) => println(s"Member unreachable: ${member}")
+
+    case ClusterEvent.MemberRemoved(member, previousStatus) => println(s"Member removed: ${member.address} after ${previousStatus}")
+
+    case event: ClusterEvent.MemberEvent => println(s"recieved ClusterEvent.MemberEvent: $event")
+
+    case state: ClusterEvent.CurrentClusterState => println(s"recieved CurrentClusterState: $state")
+
+    case ClusterStatus => sender ! Cluster(context.system).state
   }
 }
 
 class Server extends Actor with ActorLogging {
-  val cluster = context.watch(context.actorOf(Props(classOf[PaintClusterListener]), "paintchat-cluster"))
   val clients = new collection.mutable.HashMap[ActorRef, String]
   val pbuffer = new collection.mutable.ListBuffer[String]
+  val cluster = context.watch(context.actorOf(Props(classOf[PaintClusterListener]), "paintchat-cluster"))
+  val mediator = DistributedPubSub(context.system).mediator
+  mediator ! Subscribe("updates", self)
 
   def receive = {
+    case SubscribeAck(Subscribe(topic, None, `self`)) => println(s"subscripted to topic: $topic")
+
     case Http.Connected(remoteAddress, localAddress) =>
-      val connection = context.actorOf(WebSocketWorker.props(sender, self))
-      context.watch(connection)
+      val connection = context.watch(context.actorOf(WebSocketWorker.props(sender, self)))
       sender ! Http.Register(connection)
 
     case UpgradedToWebSocket => clients(sender) = ""
 
-    case _: ConnectionClosed => clients -= sender
-
-    case _: Terminated => clients -= sender
+    case _:ConnectionClosed | _:Terminated => clients -= sender
 
     case ServerStatus => sender ! ServerInfo(clients.size)
 
-    case msg: TextFrame =>
-      val _ = msg.payload.utf8String.split(":",2).toList match {
+    case Update(msg, publisher) => if (publisher != self) {handleTextFrame(msg, self)}
 
-        case "PAINT"::data::_ =>
-          pbuffer += data
-          clients.keys.foreach(_.forward(ForwardFrame(msg)))
+    case msg: TextFrame => handleTextFrame(msg, sender)
 
-        case "GETBUFFER"::_ =>
-          sender ! Push("PAINTBUFFER:"+Json.toJson(pbuffer))
+    case x => println(s"[SERVER] recieved unknown message: $x")
+  }
 
-        case "USERNAME"::username::_ =>
-          clients(sender) = username
-          sender ! Push("ACCEPTED:"+username)
-          clients.keys.foreach(_.forward(UserJoin(username)))
+  def handleTextFrame(msg: TextFrame, sender: ActorRef) = {
+    msg.payload.utf8String.split(":",2).toList match {
+      case "PAINT"::data::_ =>
+        pbuffer += data
+        if (sender != self) {mediator ! Publish("updates", Update(msg, self))}
+        clients.keys.foreach(_.forward(ForwardFrame(msg)))
 
-        case "RESET"::_ =>
-          sender ! Push("SRESET:")
-          clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
-          pbuffer.clear()
+      case "GETBUFFER"::_ =>
+        sender ! Push("PAINTBUFFER:"+Json.toJson(pbuffer))
 
-        case "CHAT"::message::_ =>
-          val m = s"CHAT:${clients(sender)}:$message"
-          clients.keys.filter(_ != sender).foreach(_ ! Push(m))
+      case "USERNAME"::username::_ =>
+        clients(sender) = username
+        sender ! Push("ACCEPTED:"+username)
+        clients.keys.foreach(_.forward(UserJoin(username)))
 
-        case _ =>
-          println(s"[SERVER] recieved unrecognized textframe: ${msg.payload.utf8String}")
-      }
+      case "RESET"::_ =>
+        sender ! Push("SRESET:")
+        clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
+        pbuffer.clear()
 
-    case x =>
-      println(s"[SERVER] recieved unknown message: $x")
+      case "CHAT"::message::_ =>
+        val m = s"CHAT:${clients(sender)}:$message"
+        clients.keys.filter(_ != sender).foreach(_ ! Push(m))
+
+      case _ =>
+        println(s"[SERVER] recieved unrecognized textframe: ${msg.payload.utf8String}")
+    }
   }
 }
 
@@ -213,17 +221,24 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
     case x => println("[WORKER] recieved unknown message: $x")
   }
 
-  def status: String = {
+  implicit val memberWrites = new Writes[Member] {
+    def writes(member: Member) = Json.obj(
+      member.address.toString -> member.status.toString
+    )
+  }
+
+  def statusJSON: JsValue = {
     implicit val timeout = Timeout(1 seconds)
     val fs = ask(parent, ServerStatus).mapTo[ServerInfo]
     val fc = ask(context.actorSelection("../paintchat-cluster"), ClusterStatus).mapTo[ClusterEvent.CurrentClusterState]
     val ServerInfo(connections) = Await.result(fs, timeout.duration)
     val clusterstatus = Await.result(fc, timeout.duration)
-    val status =  s"{status: up,"+
-                  s" uptime: ${context.system.uptime},"+
-                  s" client_connections: $connections,"+
-                  s" cluster_status: $clusterstatus}"
-    return status
+    return Json.obj(
+      "status" -> "up",
+      "uptime" -> context.system.uptime,
+      "client_connections" -> connections,
+      "cluster_status" -> clusterstatus.members
+    )
   }
 
   def businessLogicNoUpgrade: Receive = {
@@ -232,7 +247,7 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
         getFromResource("www/index.html")
       } ~
       path("status") {
-        complete(status)
+        complete(statusJSON.toString)
       } ~
       getFromResourceDirectory("www")
     }
