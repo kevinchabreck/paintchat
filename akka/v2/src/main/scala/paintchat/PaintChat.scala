@@ -22,19 +22,6 @@ import spray.routing.HttpServiceActor
 import play.api.libs.json.{Json, Writes, JsValue, JsString}
 import com.typesafe.config.ConfigFactory
 
-sealed trait Status
-case object ServerStatus extends Status
-case class ServerInfo(connections: Int) extends Status
-case object ClusterStatus extends Status
-
-sealed trait ServerMessage
-case class Push(msg: String) extends ServerMessage
-case class ForwardFrame(frame: Frame) extends ServerMessage
-case class UserJoin(user: String) extends ServerMessage
-case class UserLeft(user: String) extends ServerMessage
-
-case class Update(msg:TextFrame, publisher:ActorRef)
-
 object PaintChat extends App with MySslConfiguration {
 
   val config = ConfigFactory.load()
@@ -74,6 +61,7 @@ object PaintChat extends App with MySslConfiguration {
   }
 
   implicit val system = bindTCPPort(default_tcp_port)
+  val cluster = system.actorOf(Props(classOf[PaintClusterListener]), "paintchat-cluster")
   val server = system.actorOf(Props(classOf[Server]), "paintchat-server")
   bindHTTPPort(default_http_port)
   println("shutting down server")
@@ -125,14 +113,24 @@ class PaintClusterListener extends Actor with ActorLogging {
     case ClusterEvent.MemberRemoved(member, previousStatus) => println(s"Member removed: ${member.address} after ${previousStatus}")
     case event: ClusterEvent.MemberEvent => println(s"recieved ClusterEvent.MemberEvent: $event")
     case state: ClusterEvent.CurrentClusterState => println(s"recieved CurrentClusterState: $state")
-    case ClusterStatus => sender ! Cluster(context.system).state
   }
 }
+
+sealed trait Status
+case object ServerStatus extends Status
+case class ServerInfo(connections: Int) extends Status
+
+sealed trait ServerMessage
+case class Push(msg: String) extends ServerMessage
+case class ForwardFrame(frame: Frame) extends ServerMessage
+case class UserJoin(user: String) extends ServerMessage
+case class UserLeft(user: String) extends ServerMessage
+
+case class Update(msg:TextFrame, publisher:ActorRef)
 
 class Server extends Actor with ActorLogging {
   val clients = new collection.mutable.HashMap[ActorRef, String]
   val pbuffer = new collection.mutable.ListBuffer[String]
-  val cluster = context.watch(context.actorOf(Props(classOf[PaintClusterListener]), "paintchat-cluster"))
   val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("updates", self)
 
@@ -180,8 +178,7 @@ class Server extends Actor with ActorLogging {
         val m = s"CHAT:${clients(sender)}:$message"
         clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
-      case _ =>
-        println(s"[SERVER] recieved unrecognized textframe: ${msg.payload.utf8String}")
+      case _ => println(s"unrecognized textframe: ${msg.payload.utf8String}")
     }
   }
 }
@@ -207,13 +204,9 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
 
     case x: FrameCommandFailed => println(s"frame command failed: $x")
 
-    case x: ConnectionClosed =>
-      parent ! x
-      context.stop(self)
+    case x: ConnectionClosed => context.stop(self)
 
-    case ConfirmedClosed => println(s"[WORKER $self] ConfirmedClosed")
-
-    case x => println("[WORKER] recieved unknown message: $x")
+    case x => println(s"[WORKER] recieved unknown message: $x")
   }
 
   implicit val addressWrites = new Writes[Address] {
@@ -229,9 +222,8 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
   def statusJSON: JsValue = {
     implicit val timeout = Timeout(1 seconds)
     val fs = ask(parent, ServerStatus).mapTo[ServerInfo]
-    val fc = ask(context.actorSelection("../paintchat-cluster"), ClusterStatus).mapTo[ClusterEvent.CurrentClusterState]
     val ServerInfo(connections) = Await.result(fs, timeout.duration)
-    val clusterstatus = Await.result(fc, timeout.duration)
+    val clusterstatus = Cluster(context.system).state
     return Json.obj(
       "status" -> "Up",
       "uptime" -> context.system.uptime,
