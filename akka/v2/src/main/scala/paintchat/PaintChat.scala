@@ -1,6 +1,6 @@
 package paintchat
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props, ActorLogging, Terminated}
+import akka.actor.{Actor, ActorRef, ActorSystem, Address, Props, ActorLogging, Terminated}
 import akka.io.IO
 import akka.io.Tcp.{ConnectionClosed, ConfirmedClosed}
 import akka.util.Timeout
@@ -19,7 +19,7 @@ import spray.can.websocket.frame.{Frame, BinaryFrame, TextFrame}
 import spray.http.HttpRequest
 import spray.routing.HttpServiceActor
 
-import play.api.libs.json.{Json, Writes, JsValue}
+import play.api.libs.json.{Json, Writes, JsValue, JsString}
 import com.typesafe.config.ConfigFactory
 
 sealed trait Status
@@ -121,15 +121,10 @@ class PaintClusterListener extends Actor with ActorLogging {
 
   def receive = {
     case ClusterEvent.MemberUp(member) => println(s"Member up: ${member.address}")
-
     case ClusterEvent.UnreachableMember(member) => println(s"Member unreachable: ${member}")
-
     case ClusterEvent.MemberRemoved(member, previousStatus) => println(s"Member removed: ${member.address} after ${previousStatus}")
-
     case event: ClusterEvent.MemberEvent => println(s"recieved ClusterEvent.MemberEvent: $event")
-
     case state: ClusterEvent.CurrentClusterState => println(s"recieved CurrentClusterState: $state")
-
     case ClusterStatus => sender ! Cluster(context.system).state
   }
 }
@@ -221,9 +216,13 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
     case x => println("[WORKER] recieved unknown message: $x")
   }
 
+  implicit val addressWrites = new Writes[Address] {
+    def writes(address: Address) = JsString(address.host.get+":"+address.port.get)
+  }
+
   implicit val memberWrites = new Writes[Member] {
     def writes(member: Member) = Json.obj(
-      member.address.toString -> member.status.toString
+      member.address.host.get+":"+member.address.port.get -> member.status.toString
     )
   }
 
@@ -234,10 +233,13 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
     val ServerInfo(connections) = Await.result(fs, timeout.duration)
     val clusterstatus = Await.result(fc, timeout.duration)
     return Json.obj(
-      "status" -> "up",
+      "status" -> "Up",
       "uptime" -> context.system.uptime,
       "client_connections" -> connections,
-      "cluster_status" -> clusterstatus.members
+      "cluster" -> Json.obj(
+        "leader" -> clusterstatus.leader,
+        "members" -> clusterstatus.members
+      )
     )
   }
 
