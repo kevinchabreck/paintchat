@@ -4,7 +4,6 @@ import akka.actor.{Actor, ActorRef, ActorLogging, Terminated}
 import akka.io.Tcp.ConnectionClosed
 import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
-import spray.can.server.UHttp
 import spray.can.Http
 import spray.can.websocket.UpgradedToWebSocket
 import collection.mutable.{HashMap, ListBuffer}

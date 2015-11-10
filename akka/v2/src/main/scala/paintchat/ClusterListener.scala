@@ -26,10 +26,15 @@ class ClusterListener extends Actor with ActorLogging {
   }
 
   def receive = {
-    case ClusterEvent.MemberUp(member) => println(s"Member up: ${member.address}")
+    case ClusterEvent.MemberUp(member) => handleNewMember(member)
     case ClusterEvent.UnreachableMember(member) => println(s"Member unreachable: ${member}")
     case ClusterEvent.MemberRemoved(member, previousStatus) => println(s"Member removed: ${member.address} after ${previousStatus}")
     case event: ClusterEvent.MemberEvent => println(s"recieved ClusterEvent.MemberEvent: $event")
     case state: ClusterEvent.CurrentClusterState => println(s"recieved CurrentClusterState: $state")
+  }
+
+  def handleNewMember(member:Member) = {
+    println(s"Member up: ${member.address}")
+
   }
 }
