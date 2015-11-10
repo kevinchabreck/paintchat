@@ -1,14 +1,19 @@
 package paintchat
 
-import akka.actor.{Actor, ActorRef, ActorSystem, Props}
+import akka.actor.{Actor, ActorRef, ActorSystem, Address, Props}
+import akka.cluster.{Cluster, Member}
 import akka.http.scaladsl.Http
-import akka.http.scaladsl.server.Directives
+import akka.http.scaladsl.server.Directives._
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Source, Sink, Merge}
 import akka.stream.scaladsl.FlowGraph.Implicits._
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
-import play.api.libs.json.Json
+import akka.util.Timeout
+import akka.pattern.ask
+import play.api.libs.json.{Json, Writes, JsValue, JsString}
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.io.StdIn
 
@@ -19,16 +24,41 @@ case class UserJoined(name: String, userActor: ActorRef) extends PaintchatEvent
 case class UserLeft(name: String) extends PaintchatEvent
 case class IncomingMessage(sender: String, message: String) extends PaintchatEvent
 
-object Server extends App {
+sealed trait Status
+case object ServerStatus extends Status
+case class ServerInfo(connections: Int) extends Status
 
+object Server extends App {
+  implicit val system = ActorSystem("server-system")
+  implicit val flowMaterializer = ActorMaterializer()
+  val paintchatActor = system.actorOf(Props(classOf[PaintchatActor]))
+  val paintchatFlowControl = new PaintchatFlowControl(paintchatActor)
   var count : Int = 0
 
-  import Directives._
+  implicit val addressWrites = new Writes[Address] {
+    def writes(address: Address) = JsString(address.host.get+":"+address.port.get)
+  }
 
-  implicit val actorSystem = ActorSystem("server-system")
-  implicit val flowMaterializer = ActorMaterializer()
-
-  val paintchatFlowControl = new PaintchatFlowControl(actorSystem)
+  implicit val memberWrites = new Writes[Member] {
+    def writes(member: Member) = Json.obj(
+      member.address.host.get+":"+member.address.port.get -> member.status.toString
+    )
+  }
+  def statusJSON: JsValue = {
+    implicit val timeout = Timeout(1 seconds)
+    val fs = ask(paintchatActor, ServerStatus).mapTo[ServerInfo]
+    val ServerInfo(connections) = Await.result(fs, timeout.duration)
+    // val clusterstatus = Cluster(system).state
+    return Json.obj(
+      "status" -> "Up",
+      "uptime" -> system.uptime,
+      "client_connections" -> connections
+      // "cluster" -> Json.obj(
+      //   "leader" -> clusterstatus.leader,
+      //   "members" -> clusterstatus.members
+      // )
+    )
+  }
 
   val route = {
     pathEndOrSingleSlash {
@@ -36,10 +66,13 @@ object Server extends App {
       handleWebsocketMessages(paintchatFlowControl.websocketFlow(count.toString)) ~
       getFromResource("www/index.html")
     } ~
+    path("status") {
+      complete(statusJSON.toString)
+    } ~
     getFromResourceDirectory("www")
   }
 
-  val config = actorSystem.settings.config
+  val config = system.settings.config
   val interface = config.getString("app.interface")
   val port = config.getInt("app.port")
 
@@ -48,19 +81,13 @@ object Server extends App {
 
   StdIn.readLine()
 
-  import actorSystem.dispatcher
+  import system.dispatcher
 
-  binding.flatMap(_.unbind()).onComplete(_ => actorSystem.shutdown())
+  binding.flatMap(_.unbind()).onComplete(_ => system.shutdown())
   println("Server is down...")
-
 }
 
-object PaintchatFlowControl {
-  def apply(implicit actorSystem: ActorSystem) = new PaintchatFlowControl(actorSystem)
-}
-class PaintchatFlowControl(actorSystem: ActorSystem) {
-
-  private[this] val paintchatActor = actorSystem.actorOf(Props(classOf[PaintchatActor]))
+class PaintchatFlowControl(paintchatActor: ActorRef) {
 
   def websocketFlow(user : String): Flow[Message, Message, _] =
     Flow(Source.actorRef[PaintchatMessage](bufferSize = 5, OverflowStrategy.fail)) {
@@ -75,7 +102,7 @@ class PaintchatFlowControl(actorSystem: ActorSystem) {
                 IncomingMessage(user, txt)
             }
           )
-    
+
           //flow used as output, it returns Message's
           val backToWebsocket = builder.add(
             Flow[PaintchatMessage].map {
@@ -84,7 +111,7 @@ class PaintchatFlowControl(actorSystem: ActorSystem) {
                 TextMessage(s"$text")
             }
           )
-    
+
           //send messages to the actor, if send also UserLeft(user) before stream completes.
           val paintchatActorSink = Sink.actorRef[PaintchatEvent](paintchatActor, UserLeft(user))
 
@@ -105,7 +132,7 @@ class PaintchatFlowControl(actorSystem: ActorSystem) {
 
           //Actor already sit in flow control so each message from room is used as source and pushed back into websocket
           chatSource ~> backToWebsocket
-    
+
           // expose ports
           (fromWebsocket.inlet, backToWebsocket.outlet)
     }
@@ -124,7 +151,7 @@ class PaintchatActor() extends Actor {
     case UserLeft(name) =>
       participants -= name
 
-    //case ServerStatus => sender ! ServerInfo(clients.size)
+    case ServerStatus => sender ! ServerInfo(participants.size)
 
     case IncomingMessage(user, message) =>
       val _ = message.split(":",2).toList match {
@@ -132,7 +159,7 @@ class PaintchatActor() extends Actor {
         case "PAINT"::data::_ =>
           paintbuffer += data
           broadcast(IncomingMessage(user,message))
-   
+
         case "GETBUFFER"::_ =>
           participants(user)._1 ! PaintchatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
 
@@ -141,10 +168,10 @@ class PaintchatActor() extends Actor {
           participants += user -> (tempRef, username)
           participants(user)._1 ! PaintchatMessage(user, "ACCEPTED:"+username)
           broadcastNotSender(PaintchatMessage(user, "INFO:"+username+" has joined"))
-         
+
         case "RESET"::_ =>
           participants(user)._1 ! PaintchatMessage(user, "SRESET:")
-          broadcastNotSender(PaintchatMessage(user, "RESET:"+participants(user)._2)) 
+          broadcastNotSender(PaintchatMessage(user, "RESET:"+participants(user)._2))
           paintbuffer.clear()
 
         case "CHAT"::message::_ =>
