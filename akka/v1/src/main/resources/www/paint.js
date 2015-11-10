@@ -116,9 +116,9 @@ function init(container, width, height) {
         }
         oldX = e.pageX - rect.left;
         oldY = e.pageY - rect.top;
-        console.log("move(): X: "+oldX+" Y: "+oldY);
-        console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
-        console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
+        // console.log("move(): X: "+oldX+" Y: "+oldY);
+        // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
+        // console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
     }
 
     function start(e) {
@@ -502,6 +502,8 @@ function init(container, width, height) {
             // noty({text: '[noty] '+e.data});
             var params = e.data.split(':');
             var header = params[0];
+            console.log("header:"+header)
+            console.log("message:"+e.data)
             handlers[header](e);
         };
     }

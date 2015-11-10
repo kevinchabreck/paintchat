@@ -5,42 +5,38 @@ import akka.http.scaladsl.Http
 import akka.http.scaladsl.server.Directives
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl.{Flow, Source, Sink, Merge}
-// import akka.stream.scaladsl._
 import akka.stream.scaladsl.FlowGraph.Implicits._
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import play.api.libs.json.Json
 
 import scala.language.implicitConversions
 import scala.io.StdIn
 
-case class ChatMessage(sender: String, text: String)
-object SystemMessage {
-  def apply(text: String) = ChatMessage("System", text)
-}
-sealed trait ChatEvent
-case class UserJoined(name: String, userActor: ActorRef) extends ChatEvent
-case class UserLeft(name: String) extends ChatEvent
-case class IncomingMessage(sender: String, message: String) extends ChatEvent
+case class PaintchatMessage(sender: String, text: String)
+
+sealed trait PaintchatEvent
+case class UserJoined(name: String, userActor: ActorRef) extends PaintchatEvent
+case class UserLeft(name: String) extends PaintchatEvent
+case class IncomingMessage(sender: String, message: String) extends PaintchatEvent
 
 object Server extends App {
+
+  var count : Int = 0
 
   import Directives._
 
   implicit val actorSystem = ActorSystem("server-system")
   implicit val flowMaterializer = ActorMaterializer()
 
+  val paintchatFlowControl = new PaintchatFlowControl(actorSystem)
+
   val route = {
     pathEndOrSingleSlash {
-      handleWebsocketMessages(ChatRooms.findOrCreate(0).websocketFlow) ~
+      count += 1
+      handleWebsocketMessages(paintchatFlowControl.websocketFlow(count.toString)) ~
       getFromResource("www/index.html")
     } ~
     getFromResourceDirectory("www")
-  }
-
-  val connectionManager: Flow[Message, Message, _] = Flow[Message].map {
-    case TextMessage.Strict(txt) =>
-      println(s"$txt")
-      TextMessage("ECHO: " + txt)
-    case _ => TextMessage("Message type unsupported")
   }
 
   val config = actorSystem.settings.config
@@ -59,30 +55,15 @@ object Server extends App {
 
 }
 
-object ChatRooms {
-  var chatRooms: Map[Int, ChatRoom] = Map.empty[Int, ChatRoom]
-
-  def findOrCreate(number: Int)(implicit actorSystem: ActorSystem): ChatRoom = chatRooms.getOrElse(number, createNewChatRoom(number))
-
-  private def createNewChatRoom(number: Int)(implicit actorSystem: ActorSystem): ChatRoom = {
-    val chatroom = ChatRoom(number)
-    chatRooms += number -> chatroom
-    chatroom
-  }
+object PaintchatFlowControl {
+  def apply(implicit actorSystem: ActorSystem) = new PaintchatFlowControl(actorSystem)
 }
+class PaintchatFlowControl(actorSystem: ActorSystem) {
 
-object ChatRoom {
-  def apply(roomId: Int)(implicit actorSystem: ActorSystem) = new ChatRoom(roomId, actorSystem)
-}
-class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
+  private[this] val paintchatActor = actorSystem.actorOf(Props(classOf[PaintchatActor]))
 
-  private[this] val chatRoomActor = actorSystem.actorOf(Props(classOf[ChatRoomActor], roomId))
-
-  val user = "user"
-  //def websocketFlow(user: String): Flow[Message, Message, _] =
-  // def websocketFlow(connection: ActorRef): Flow[Message, Message, _] =
-  def websocketFlow: Flow[Message, Message, _] =
-    Flow(Source.actorRef[ChatMessage](bufferSize = 5, OverflowStrategy.fail)) {
+  def websocketFlow(user : String): Flow[Message, Message, _] =
+    Flow(Source.actorRef[PaintchatMessage](bufferSize = 5, OverflowStrategy.fail)) {
       implicit builder =>
         chatSource => //source provideed as argument
 
@@ -90,27 +71,27 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           val fromWebsocket = builder.add(
             Flow[Message].collect {
               case TextMessage.Strict(txt) =>
-                println(s"[$user] -> $txt")
+                //println(s"[$user] -> $txt")
                 IncomingMessage(user, txt)
             }
           )
-
+    
           //flow used as output, it returns Message's
           val backToWebsocket = builder.add(
-            Flow[ChatMessage].map {
-              case ChatMessage(author, text) =>
-                println(s"[$user] <- [$author]: $text")
-                TextMessage(/*s"[$author]: $text"*/s"$text")
+            Flow[PaintchatMessage].map {
+              case PaintchatMessage(author, text) =>
+                //println(s"[$user] <- [$author]: $text")
+                TextMessage(s"$text")
             }
           )
-
+    
           //send messages to the actor, if send also UserLeft(user) before stream completes.
-          val chatActorSink = Sink.actorRef[ChatEvent](chatRoomActor, UserLeft(user))
+          val paintchatActorSink = Sink.actorRef[PaintchatEvent](paintchatActor, UserLeft(user))
 
           //merges both pipes
-          val merge = builder.add(Merge[ChatEvent](2))
+          val merge = builder.add(Merge[PaintchatEvent](2))
 
-          //Materialized value of Actor who sit in chatroom
+          //Materialized value of Actor who sits in flow control
           val actorAsSource = builder.materializedValue.map(actor => UserJoined(user, actor))
 
           //Message from websocket is converted into IncommingMessage and should be send to each in room
@@ -119,39 +100,72 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           //If Source actor is just created should be send as UserJoined and registered as particiant in room
           actorAsSource ~> merge.in(1)
 
-          //Merges both pipes above and forward messages to chatroom Represented by ChatRoomActor
-          merge ~> chatActorSink
+          //Merges both pipes above and forward messages to PaintchatActor
+          merge ~> paintchatActorSink
 
-          //Actor already sit in chatRoom so each message from room is used as source and pushed back into websocket
+          //Actor already sit in flow control so each message from room is used as source and pushed back into websocket
           chatSource ~> backToWebsocket
-
+    
           // expose ports
           (fromWebsocket.inlet, backToWebsocket.outlet)
     }
 
-  def sendMessage(message: ChatMessage): Unit = chatRoomActor ! message
+  def sendMessage(message: PaintchatMessage): Unit = paintchatActor ! message
 }
 
-class ChatRoomActor(roomId: Int) extends Actor {
-  var participants: Map[String, ActorRef] = Map.empty[String, ActorRef]
+class PaintchatActor() extends Actor {
+  var participants: Map[String, (ActorRef, String)] = Map.empty[String, (ActorRef, String)] // map of numeric identifier to actor reference and username
+  val paintbuffer = new collection.mutable.ListBuffer[String]
 
   override def receive: Receive = {
     case UserJoined(name, actorRef) =>
-      participants += name -> actorRef
-      broadcast(SystemMessage(s"User $name joined channel..."))
-      println(s"User $name joined channel[$roomId]")
+      participants += name -> (actorRef, "")
 
     case UserLeft(name) =>
-      println(s"User $name left channel[$roomId]")
-      broadcast(SystemMessage(s"User $name left channel[$roomId]"))
       participants -= name
 
-    case msg: IncomingMessage =>
-      broadcast(msg)
+    //case ServerStatus => sender ! ServerInfo(clients.size)
+
+    case IncomingMessage(user, message) =>
+      val _ = message.split(":",2).toList match {
+
+        case "PAINT"::data::_ =>
+          paintbuffer += data
+          broadcast(IncomingMessage(user,message))
+   
+        case "GETBUFFER"::_ =>
+          participants(user)._1 ! PaintchatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
+
+        case "USERNAME"::username::_ =>
+          val tempRef : ActorRef = participants(user)._1
+          participants += user -> (tempRef, username)
+          participants(user)._1 ! PaintchatMessage(user, "ACCEPTED:"+username)
+          broadcastNotSender(PaintchatMessage(user, "INFO:"+username+" has joined"))
+         
+        case "RESET"::_ =>
+          participants(user)._1 ! PaintchatMessage(user, "SRESET:")
+          broadcastNotSender(PaintchatMessage(user, "RESET:"+participants(user)._2)) 
+          paintbuffer.clear()
+
+        case "CHAT"::message::_ =>
+          val m = "CHAT:"+participants(user)._2+":"+message
+          broadcastNotSender(PaintchatMessage(user, m))
+
+        case x =>
+          println(s"[SERVER] recieved unrecognized update: $x")
+      }
+
+    case x =>
+      println("[SERVER] recieved unknown message: "+x)
   }
 
-  implicit def chatEventToChatMessage(event: IncomingMessage): ChatMessage = ChatMessage(event.sender, event.message)
 
-  def broadcast(message: ChatMessage): Unit = participants.values.foreach(_ ! message)
+  implicit def chatEventToChatMessage(event: IncomingMessage): PaintchatMessage = PaintchatMessage(event.sender, event.message)
 
+  def broadcast(message: PaintchatMessage): Unit = participants.values.foreach(_._1 ! message)
+
+  def broadcastNotSender(m : PaintchatMessage): Unit = {
+    val PaintchatMessage(user,message) = m
+    participants.filter({case (u,_)=> user != u }).foreach({case(_,(ref,_)) => ref ! PaintchatMessage(user,message)})
+  }
 }
