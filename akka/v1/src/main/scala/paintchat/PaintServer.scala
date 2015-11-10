@@ -41,13 +41,6 @@ object Server extends App {
     getFromResourceDirectory("www")
   }
 
-  // val connectionManager: Flow[Message, Message, _] = Flow[Message].map {
-  //   case TextMessage.Strict(txt) =>
-  //     println(s"$txt")
-  //     TextMessage("ECHO: " + txt)
-  //   case _ => TextMessage("Message type unsupported")
-  // }
-
   val config = actorSystem.settings.config
   val interface = config.getString("app.interface")
   val port = config.getInt("app.port")
@@ -83,10 +76,6 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
 
   private[this] val chatRoomActor = actorSystem.actorOf(Props(classOf[ChatRoomActor], roomId))
 
-  //println(actorSystem.actorOf())
-
-  //def websocketFlow(user: String): Flow[Message, Message, _] =
-  // def websocketFlow(connection: ActorRef): Flow[Message, Message, _] =
   def websocketFlow(user : String): Flow[Message, Message, _] =
     Flow(Source.actorRef[ChatMessage](bufferSize = 5, OverflowStrategy.fail)) {
       implicit builder =>
@@ -96,11 +85,8 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           val fromWebsocket = builder.add(
             Flow[Message].collect {
               case TextMessage.Strict(txt) =>
-                println(s"[$user] -> $txt")
+                //println(s"[$user] -> $txt")
                 IncomingMessage(user, txt)
-                // IncomingMessage(Source.actorRef, txt)
-                // IncomingMessage(chatSource, txt)
-                // IncomingMessage(_, txt)
             }
           )
 
@@ -108,8 +94,8 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
           val backToWebsocket = builder.add(
             Flow[ChatMessage].map {
               case ChatMessage(author, text) =>
-                println(s"[$user] <- [$author]: $text")
-                TextMessage(/*s"[$author]: $text"*/s"$text")
+                //println(s"[$user] <- [$author]: $text")
+                TextMessage(s"$text")
             }
           )
 
@@ -142,30 +128,21 @@ class ChatRoom(roomId: Int, actorSystem: ActorSystem) {
 }
 
 class ChatRoomActor(roomId: Int) extends Actor {
-  var participants: Map[String, ActorRef] = Map.empty[String, ActorRef]
-  val clients = collection.mutable.Map[ActorRef, String]()
+  var participants: Map[String, (ActorRef, String)] = Map.empty[String, (ActorRef, String)] // map of numeric identifier to actor reference and username
   val paintbuffer = new collection.mutable.ListBuffer[String]
 
   override def receive: Receive = {
     case UserJoined(name, actorRef) =>
-      participants += name -> actorRef
-      broadcast(SystemMessage(s"User $name joined channel..."))
-      println(s"User $name joined channel[$roomId]")
+      participants += name -> (actorRef, "")
+      //broadcast(SystemMessage(s"User $name joined channel..."))
 
     case UserLeft(name) =>
-      println(s"User $name left channel[$roomId]")
-      broadcast(SystemMessage(s"User $name left channel[$roomId]"))
+      //broadcast(SystemMessage(s"User $name left channel[$roomId]"))
       participants -= name
 
-    //case msg: IncomingMessage =>
     case IncomingMessage(user, message) =>
-    // case IncomingMessage(sender, message) =>
-      //message match {
-      //case msg.message
-      //broadcast(msg)
-  /*}
 
- def receive = {
+ /*def receive = {
     case Http.Connected(remoteAddress, localAddress) =>
       val conn = context.actorOf(WebSocketWorker.props(sender, self))
       context.watch(conn)
@@ -186,29 +163,24 @@ class ChatRoomActor(roomId: Int) extends Actor {
         case "PAINT"::data::_ =>
           paintbuffer += data
           broadcast(IncomingMessage(user,message))
-          //clients.keys.foreach(_.forward(ForwardFrame(message)))
-          //println("Asked for paintbuffer")
-
+   
         case "GETBUFFER"::_ =>
-          //sender ! ChatMessage(user, /*Push(*/"PAINTBUFFER:"+paintbuffer.toList.toJson)
-          println("Asker for get buffer")
-          participants(user) ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
-          println(s"sending buffer: ${Json.toJson(paintbuffer)}")
+          participants(user)._1 ! ChatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
 
         case "USERNAME"::username::_ =>
-          //clients(sender) = username
-          //sender ! Push("ACCEPTED:"+username)
-          //clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
-          println("Username")
-
+          val tempRef : ActorRef = participants(user)._1
+          participants += user -> (tempRef, username)
+          participants(user)._1 ! ChatMessage(user, "ACCEPTED:"+username)
+          broadcast(ChatMessage(user, "INFO:"+username+" has joined"))
+         
         case "RESET"::_ =>
-          //sender ! Push("SRESET:")
-          //clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
+          participants(user)._1 ! ChatMessage(user, "SRESET:")
+          broadcast(ChatMessage(user, "RESET:"+participants(user)._2)) 
           paintbuffer.clear()
 
         case "CHAT"::message::_ =>
-          val m = "CHAT:"+clients(sender)+":"+message
-          //clients.keys.filter(_ != sender).foreach(_ ! Push(m))
+          val m = "CHAT:"+participants(user)._2+":"+message
+          broadcast(ChatMessage(user, m))
 
         case x =>
           println(s"[SERVER] recieved unrecognized update: $x")
@@ -221,6 +193,6 @@ class ChatRoomActor(roomId: Int) extends Actor {
 
   implicit def chatEventToChatMessage(event: IncomingMessage): ChatMessage = ChatMessage(event.sender, event.message)
 
-  def broadcast(message: ChatMessage): Unit = participants.values.foreach(_ ! message)
+  def broadcast(message: ChatMessage): Unit = participants.values.foreach(_._1 ! message)
 
 }
