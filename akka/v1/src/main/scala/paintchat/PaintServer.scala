@@ -33,7 +33,7 @@ object Server extends App {
   implicit val flowMaterializer = ActorMaterializer()
   val paintchatActor = system.actorOf(Props(classOf[PaintchatActor]))
   val paintchatFlowControl = new PaintchatFlowControl(paintchatActor)
-  var count : Int = 0
+  var count:Int = 0
 
   implicit val addressWrites = new Writes[Address] {
     def writes(address: Address) = JsString(address.host.get+":"+address.port.get)
