@@ -11,6 +11,7 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Subscr
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import collection.mutable.{HashMap, ListBuffer}
 
 import spray.can.server.UHttp
 import spray.can.{Http, websocket}
@@ -36,11 +37,12 @@ object PaintChat extends App with MySslConfiguration {
       return ActorSystem("ClusterSystem", config)
     } catch {
       case _ : Throwable =>
-        if (port == default_tcp_port)
+        if (port == default_tcp_port) {
           return bindTCPPort(0)
-        else
+        } else {
           println(s"Error: TCP port bind failed")
           return ActorSystem("ClusterSystem")
+        }
     }
   }
 
@@ -120,93 +122,102 @@ sealed trait Status
 case object ServerStatus extends Status
 case class ServerInfo(connections: Int) extends Status
 
-sealed trait ServerMessage
-case class Push(msg: String) extends ServerMessage
-case class ForwardFrame(frame: Frame) extends ServerMessage
-case class UserJoin(user: String) extends ServerMessage
-case class UserLeft(user: String) extends ServerMessage
+sealed trait ServerUpdate
+case class Accepted(username: String) extends ServerUpdate
+case class UserJoin(username: String, client:ActorRef) extends ServerUpdate
+case class UserLeft(username: String) extends ServerUpdate
+case class PaintBuffer(pbuffer: ListBuffer[String]) extends ServerUpdate
 
-case class Update(msg:TextFrame, publisher:ActorRef)
+sealed trait ClientUpdate
+case class Paint(data:String) extends ClientUpdate
+case class UserName(username:String) extends ClientUpdate
+case class Chat(username:String, message:String, client:ActorRef) extends ClientUpdate
+case class Reset(username:String, client:ActorRef) extends ClientUpdate
+case object GetBuffer extends ClientUpdate
 
 class Server extends Actor with ActorLogging {
-  val clients = new collection.mutable.HashMap[ActorRef, String]
-  val pbuffer = new collection.mutable.ListBuffer[String]
+  val clients = new HashMap[ActorRef, String]
+  val pbuffer = new ListBuffer[String]
   val mediator = DistributedPubSub(context.system).mediator
-  mediator ! Subscribe("updates", self)
+  mediator ! Subscribe("update", self)
 
   def receive = {
-    case SubscribeAck(Subscribe(topic, None, `self`)) => println(s"subscripted to topic: $topic")
+    case SubscribeAck(Subscribe(topic, None, `self`)) => println(s"subscribed to topic: $topic")
+    case UpgradedToWebSocket => clients(sender) = ""
+    case ServerStatus => sender ! ServerInfo(clients.size)
+    case c:Chat => clients.keys.foreach(_ ! c)
+    case u:UserJoin => clients.keys.foreach(_ ! u)
+    case u:UserLeft => clients.keys.foreach(_ ! u)
+    case GetBuffer => sender ! PaintBuffer(pbuffer)
 
     case Http.Connected(remoteAddress, localAddress) =>
-      val connection = context.watch(context.actorOf(WebSocketWorker.props(sender, self)))
+      val connection = context.watch(context.actorOf(WebSocketWorker.props(sender, self, mediator)))
       sender ! Http.Register(connection)
 
-    case UpgradedToWebSocket => clients(sender) = ""
+    case _:ConnectionClosed | _:Terminated =>
+      mediator ! Publish("update", UserLeft(clients(sender)))
+      clients -= sender
 
-    case _:ConnectionClosed | _:Terminated => clients -= sender
+    case Paint(data) =>
+      clients.keys.foreach(_ ! Paint(data))
+      pbuffer += data
 
-    case ServerStatus => sender ! ServerInfo(clients.size)
+    case r:Reset =>
+      clients.keys.foreach(_ ! r)
+      pbuffer.clear()
 
-    case Update(msg, publisher) => if (publisher != self) {handleTextFrame(msg, self)}
+    case UserName(username) =>
+      clients(sender) = username
+      sender ! Accepted(username)
+      mediator ! Publish("update", UserJoin(username,sender))
 
-    case msg: TextFrame => handleTextFrame(msg, sender)
-
-    case x => println(s"[SERVER] recieved unknown message: $x")
-  }
-
-  def handleTextFrame(msg: TextFrame, sender: ActorRef) = {
-    msg.payload.utf8String.split(":",2).toList match {
-      case "PAINT"::data::_ =>
-        pbuffer += data
-        if (sender != self) {mediator ! Publish("updates", Update(msg, self))}
-        clients.keys.foreach(_.forward(ForwardFrame(msg)))
-
-      case "GETBUFFER"::_ =>
-        sender ! Push("PAINTBUFFER:"+Json.toJson(pbuffer))
-
-      case "USERNAME"::username::_ =>
-        clients(sender) = username
-        sender ! Push("ACCEPTED:"+username)
-        clients.keys.foreach(_.forward(UserJoin(username)))
-
-      case "RESET"::_ =>
-        sender ! Push("SRESET:")
-        clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
-        pbuffer.clear()
-
-      case "CHAT"::message::_ =>
-        val m = s"CHAT:${clients(sender)}:$message"
-        clients.keys.filter(_ != sender).foreach(_ ! Push(m))
-
-      case _ => println(s"unrecognized textframe: ${msg.payload.utf8String}")
-    }
+    case x => println(s"[SERVER] recieved unknown message from $sender: $x")
   }
 }
 
 object WebSocketWorker {
-  def props(serverConnection: ActorRef, parent: ActorRef) = Props(classOf[WebSocketWorker], serverConnection, parent)
+  def props(serverConnection:ActorRef, parent:ActorRef, mediator:ActorRef) = Props(classOf[WebSocketWorker], serverConnection, parent, mediator)
 }
-class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
+class WebSocketWorker(val serverConnection:ActorRef, val parent:ActorRef, val mediator:ActorRef) extends HttpServiceActor with websocket.WebSocketServerWorker {
+
+  var username = "anonymous"
 
   override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
   def businessLogic: Receive = {
-
-    case msg: TextFrame => parent ! msg
-
     case UpgradedToWebSocket => parent ! UpgradedToWebSocket
+    case x:FrameCommandFailed => println(s"frame command failed: $x")
+    case x:ConnectionClosed => context.stop(self)
+    case frame:TextFrame => handleTextFrame(frame)
+    case Paint(data) => send(TextFrame(s"PAINT:$data"))
+    case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
+    case UserLeft(username) => send(TextFrame(s"INFO:$username has left"))
+    case PaintBuffer(pbuffer) => send(TextFrame(s"PAINTBUFFER:${Json.toJson(pbuffer)}"))
 
-    case ForwardFrame(f) => send(f)
+    case Accepted(username) =>
+      send(TextFrame(s"ACCEPTED:$username"))
+      this.username = username
 
-    case Push(msg) => send(TextFrame(msg))
+    case Chat(username, message, client) =>
+      val s = if (client!=self) username else "Me"
+      send(TextFrame(s"CHAT:$s:$message"))
 
-    case UserJoin(user) => if (sender!=self) {send(TextFrame(s"INFO:$user has joined"))}
-
-    case x: FrameCommandFailed => println(s"frame command failed: $x")
-
-    case x: ConnectionClosed => context.stop(self)
+    case Reset(username, client) =>
+      val rs_msg = if (client!=self) s"RESET:$username" else "SRESET:"
+      send(TextFrame(rs_msg))
 
     case x => println(s"[WORKER] recieved unknown message: $x")
+  }
+
+  def handleTextFrame(frame: TextFrame) = {
+    frame.payload.utf8String.split(":",2).toList match {
+      case "PAINT"::data::_ => mediator ! Publish("update", Paint(data))
+      case "CHAT"::message::_ => mediator ! Publish("update", Chat(username,message,self))
+      case "RESET"::_ => mediator ! Publish("update", Reset(username, self))
+      case "USERNAME"::username::_ => parent ! UserName(username)
+      case "GETBUFFER"::_ => parent ! GetBuffer
+      case _ => println(s"unrecognized textframe: ${frame.payload.utf8String}")
+    }
   }
 
   implicit val addressWrites = new Writes[Address] {

@@ -186,18 +186,6 @@ function init(container, width, height) {
     if((e.type == "click") || $('#chatInput').is(':focus')){
       msg = $('#chatInput').val();
       ws.send('CHAT:'+msg);
-      noty({
-        text: "<b>Me</b>: "+msg,
-        layout: 'topRight',
-        type: 'information',
-        animation: {
-          open: 'animated bounceInRight',
-          close: 'animated fadeOut'
-        },
-        timeout: 4000,
-        maxVisible: 0,
-        theme: 'relax'
-      });
       $('#chatInput').val("");
     }
   }
