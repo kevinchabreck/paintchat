@@ -80,7 +80,7 @@ object Server extends App {
 
   val binding = Http().bindAndHandle(route, interface, port)
 
-  StdIn.readLine("server listening on http://$interface:$port (press ENTER to exit)\n")
+  StdIn.readLine(s"server listening on http://$interface:$port (press ENTER to exit)\n")
   println("shutting down server")
   binding.flatMap(_.unbind()).onComplete(_ => system.terminate())
   Await.result(system.whenTerminated, Duration.Inf)
