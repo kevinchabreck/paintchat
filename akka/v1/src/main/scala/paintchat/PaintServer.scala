@@ -99,7 +99,7 @@ class PaintchatFlowControl(paintchatActor: ActorRef) {
           val fromWebsocket = builder.add(
             Flow[Message].collect {
               case TextMessage.Strict(txt) =>
-                println(s"[$chatSource] -> $txt")
+                //println(s"[$chatSource] -> $txt")
                 IncomingMessage(user, txt)
             }
           )
@@ -156,7 +156,7 @@ class PaintchatActor() extends Actor {
     case ServerStatus => sender ! ServerInfo(participants.size)
 
     case IncomingMessage(user, message) =>
-      println(s"new IncomingMessage [client = ${participants(user)._1}, sender = $sender]")
+      //println(s"new IncomingMessage [client = ${participants(user)._1}, sender = $sender]")
       val _ = message.split(":",2).toList match {
 
         case "PAINT"::data::_ =>
