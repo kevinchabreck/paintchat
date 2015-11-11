@@ -41,30 +41,22 @@
   </head>
 
   <body>
-    <div class="container">
+    <div id="pageContainer" class="container">
 
       <div class="header clearfix">
         <h1>draw.ws</h1>
       </div>
 
-      <!-- <div id="canvasPanel" class="panel panel-default"> -->
       <div id="canvasPanel" class="panel panel-default">
         <div id="canvasPanelBody" class="panel-body">
-      <!-- <div class="row"> -->
           <div id="canvasSpace" ></div>
-      <!-- </div> -->
         </div>
       </div>
 
       <div class="row">
         <div class="col-lg-12">
-          <!-- <div class="row">
-            <div id="canvasSpace"></div>
-          </div> -->
 
-          <!-- <div id="chatSpace" class="row row-centered"> -->
           <div id="chatSpace" style="display:none" class="row">
-            <!-- <div class="col-lg-6 col-centered input-group"> -->
             <div class="col-lg-6 col-centered">
               <div class="input-group">
                 <input id="chatInput" type="text" class="form-control" placeholder="say something!">
@@ -97,6 +89,11 @@
                       data-toggle="tooltip" data-placement="top" title="Chat">
                 <span type='span' class="tool glyphicon glyphicon-comment"></span>
               </button>
+              <button id="selectUsers" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Users">
+                <span type='span' class="tool glyphicon glyphicon-user"></span>
+                <span class="badge badge-notify">3</span>
+              </button>
               <button id="resetCanvas" type="button" class="toolbutton btn btn-default"
                       data-toggle="tooltip" data-placement="top" title="Reset">
                 <span type='span' class="tool glyphicon glyphicon-trash"></span>
@@ -109,6 +106,6 @@
       <footer class="footer">
         <p>&copy; Kevin Chabreck 2015</p>
       </footer>
-    </div> <!-- /container -->
+    </div>
   </body>
 </html>

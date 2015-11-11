@@ -5,6 +5,7 @@ import akka.cluster.{Cluster, ClusterEvent, Member}
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberUp, MemberExited, MemberRemoved, UnreachableMember, ReachableMember, MemberEvent}
 
 class ClusterListener extends Actor with ActorLogging {
+  var initialized = false
   val cluster = Cluster(context.system)
 
   override def preStart(): Unit = {
@@ -35,6 +36,9 @@ class ClusterListener extends Actor with ActorLogging {
 
   def handleNewMember(member:Member) = {
     println(s"Member up: ${member.address}")
-
+    if (!initialized && (cluster.selfAddress != cluster.state.leader.get)) {
+      // request buffer from leader's ServerWorker, and set initialized=true
+      // send UpdateBuffer to local ServerWorker
+    }
   }
 }

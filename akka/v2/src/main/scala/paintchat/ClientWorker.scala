@@ -51,6 +51,8 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
     case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
     case UserLeft(username) => send(TextFrame(s"INFO:$username has left"))
+    // case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"USERJOIN:$username"))}
+    // case UserLeft(username) => send(TextFrame(s"USERLEFT:$username"))
     case PaintBuffer(pbuffer) => send(TextFrame(s"PAINTBUFFER:${Json.toJson(pbuffer)}"))
 
     case Accepted(username) =>
@@ -94,6 +96,7 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
     val fs = ask(parent, ServerStatus).mapTo[ServerInfo]
     val ServerInfo(connections) = Await.result(fs, timeout.duration)
     val clusterstatus = Cluster(context.system).state
+    context.actorSelection("/user/cluster") ! ClusterStatus
     return Json.obj(
       "status" -> "Up",
       "uptime" -> context.system.uptime,

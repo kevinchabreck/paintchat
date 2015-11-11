@@ -1,11 +1,8 @@
-
-/* Space out content a bit */
 body {
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
-/* Everything but the jumbotron gets side spacing for mobile first views */
 .header,
 .marketing,
 .footer {
@@ -13,52 +10,26 @@ body {
   padding-left: 15px;
 }
 
-/* Custom page header */
 .header {
-  /*padding-bottom: 20px;*/
   padding-bottom: 10px;
-  /*border-bottom: 1px solid #e5e5e5;*/
 }
 
-/* Custom page footer */
 .footer {
   text-align: center;
   margin-top: 10px;
   padding-top: 19px;
   color: #777;
-  /*border-top: 1px solid #e5e5e5;*/
 }
 
-/* Make the masthead heading the same height as the navigation */
-/*.header h3 {
-  margin-top: 0;
-  margin-bottom: 0;
-  line-height: 40px;
-}*/
-
-/* Customize container */
-/*@media (min-width: 768px) {
-  .container {
-    width: 730px;
-    max-width: 730px;
-    padding-left: 0px;
-    padding-right: 0px;
-    max-width: 1024px;
-  }
-}*/
-
 #toolSpace {
-  /*padding-top: 20px;*/
   padding-top: 10px;
-  /*padding-bottom: 10px;*/
 }
 
 #chatspace {
-  /*margin-top: 50px;*/
+
 }
 
 #canvasPanelBody {
-  /*margin: 0px;*/
   padding: 0px;
 }
 
@@ -73,36 +44,26 @@ body {
 }
 
 #canvasSpace {
-  /*padding-top: 10px;*/
-  /*padding-bottom: 10px;*/
+
 }
 
 .canvas {
-  /*border:1px solid #000000;*/
+
 }
 
-/*#colorPalette {
-  font-size: 2em;
-}*/
-
-/*.panel {
-  padding: 0px;
-  margin: 0px;
-}*/
-
-#colorPalette,
-#sizePlus,
-#sizeMinus,
-#selectEraser,
-#selectChat,
-#resetCanvas {
-  vertical-align: middle;
-  font-size: 2em;
+.badge-notify{
+  background:red !important;
+  position:relative;
+  top: -18px !important;
+  left: -20px;
+  font-size: 0.4em;
 }
 
 .toolbutton {
   padding-top: 0px;
   vertical-align: middle;
+  max-width: 54px;
+  font-size: 2em;
 }
 
 .tool {
@@ -110,76 +71,21 @@ body {
   vertical-align: middle;
 }
 
-/* Main marketing message and sign up button */
-/*#canvasSpace,*/
-.container
+#pageContainer
 {
   text-align: center;
-  /*width: 730px;*/
-  /*max-width: 730px;*/
   max-width: 700px;
   padding-left: 0px;
   padding-right: 0px;
-  /*margin-left: auto;*/
-  /*margin-right: auto;*/
-  /*text-align: center;*/
-  /*background-color: white;*/
-  /*padding-top: 0px;*/
-  /*padding-bottom: 0px;*/
-  /*padding-right: 0px;*/
-  /*padding-left: 0px;*/
-  /*border-radius: 0px;*/
-  /*margin-top: 0px;*/
-  /*margin-bottom: 0px;*/
-  /*margin-left: 0px;*/
-  /*margin-right: 0px;*/
-  /*float:none;*/
-  /*display:inline-block;*/
-  /*vertical-align:middle;*/
-}
-
-.canvas {
-
 }
 
 .row-centered {
     text-align:center;
 }
+
 .col-centered {
     display:inline-block;
     float:none;
-    /* reset the text-align */
     text-align:left;
-    /* inline-block space fix */
     margin-right:-4px;
 }
-
-/* Supporting marketing content */
-/*.marketing {
-  margin: 40px 0;
-}
-.marketing p + h4 {
-  margin-top: 28px;
-}*/
-
-/* Responsive: Portrait tablets and up */
-/*@media screen and (min-width: 768px) {*/
-  /* Remove the padding we set earlier */
-  /*.header,
-  .marketing,
-  .footer {
-    padding-right: 0;
-    padding-left: 0;
-    width: 100%;
-  }*/
-  /* Space out the masthead */
-  /*.header {
-    margin-bottom: 30px;
-    margin-bottom: 10px;
-  }*/
-  /* Remove the bottom border on the jumbotron for visual effect */
-  /*.jumbotron {
-    border-bottom: 0;
-    width:auto;
-  }*/
-/*}*/
