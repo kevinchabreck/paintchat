@@ -96,7 +96,6 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
     val fs = ask(parent, ServerStatus).mapTo[ServerInfo]
     val ServerInfo(connections) = Await.result(fs, timeout.duration)
     val clusterstatus = Cluster(context.system).state
-    context.actorSelection("/user/cluster") ! ClusterStatus
     return Json.obj(
       "status" -> "Up",
       "uptime" -> context.system.uptime,
