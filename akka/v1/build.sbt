@@ -13,6 +13,7 @@ scalacOptions ++= Seq(
 )
 
 val akkaVersion = "2.4.0"
+// val akkaHttpVersion = "2.0-M1"
 val akkaHttpVersion = "1.0"
 val playVersion = "2.4.3"
 

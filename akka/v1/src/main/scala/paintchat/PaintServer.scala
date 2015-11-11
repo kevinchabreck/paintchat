@@ -14,6 +14,7 @@ import play.api.libs.json.{Json, Writes, JsValue, JsString}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.language.implicitConversions
 import scala.io.StdIn
 
@@ -44,6 +45,7 @@ object Server extends App {
       member.address.host.get+":"+member.address.port.get -> member.status.toString
     )
   }
+
   def statusJSON: JsValue = {
     implicit val timeout = Timeout(1 seconds)
     val fs = ask(paintchatActor, ServerStatus).mapTo[ServerInfo]
@@ -77,28 +79,27 @@ object Server extends App {
   val port = config.getInt("app.port")
 
   val binding = Http().bindAndHandle(route, interface, port)
-  println(s"server listening on http://$interface:$port (press ENTER to exit)")
 
-  StdIn.readLine()
-
-  import system.dispatcher
-
-  binding.flatMap(_.unbind()).onComplete(_ => system.shutdown())
-  println("Server is down...")
+  StdIn.readLine("server listening on http://$interface:$port (press ENTER to exit)\n")
+  println("shutting down server")
+  binding.flatMap(_.unbind()).onComplete(_ => system.terminate())
+  Await.result(system.whenTerminated, Duration.Inf)
 }
 
 class PaintchatFlowControl(paintchatActor: ActorRef) {
 
-  def websocketFlow(user : String): Flow[Message, Message, _] =
+  def websocketFlow(user: String): Flow[Message, Message, _] =
     Flow(Source.actorRef[PaintchatMessage](bufferSize = 5, OverflowStrategy.fail)) {
       implicit builder =>
         chatSource => //source provideed as argument
 
+          var socket : ActorRef = null
+          // println(s"[flow $user] builder.materializedValue: ${builder.materializedValue}")
           //flow used as input it takes Message's
           val fromWebsocket = builder.add(
             Flow[Message].collect {
               case TextMessage.Strict(txt) =>
-                //println(s"[$user] -> $txt")
+                println(s"[$chatSource] -> $txt")
                 IncomingMessage(user, txt)
             }
           )
@@ -146,6 +147,7 @@ class PaintchatActor() extends Actor {
 
   override def receive: Receive = {
     case UserJoined(name, actorRef) =>
+      // println(s"got userjoin($name, $actorRef)")
       participants += name -> (actorRef, "")
 
     case UserLeft(name) =>
@@ -154,6 +156,7 @@ class PaintchatActor() extends Actor {
     case ServerStatus => sender ! ServerInfo(participants.size)
 
     case IncomingMessage(user, message) =>
+      println(s"new IncomingMessage [client = ${participants(user)._1}, sender = $sender]")
       val _ = message.split(":",2).toList match {
 
         case "PAINT"::data::_ =>
