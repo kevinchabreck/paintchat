@@ -1,5 +1,5 @@
 
-name := "paintchat benchmarks"
+name := "paintchat-benchmarks"
 
 version := "1.0"
 

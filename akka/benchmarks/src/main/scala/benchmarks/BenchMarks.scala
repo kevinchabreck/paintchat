@@ -1,6 +1,7 @@
 package benchmarks
 
 import scala.sys.exit
+import scala.io.StdIn.readLine
 import com.typesafe.config.ConfigFactory
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.{Draft_17}
@@ -25,7 +26,7 @@ object Benchmarks extends App {
 
   // used to determine when the last packet was recieved to delay tests while traffic is going on
   var lastReceived : Long = 0
-  
+
   // store the results of all the tests so that the information can be examined
   var delayArray = Array.ofDim[Double](numberClients, numberTestPackets)
 
@@ -88,7 +89,7 @@ object Benchmarks extends App {
       var min = Double.MaxValue
       delayArray(clientNum - 1).foreach({ cnt =>
         if ( cnt > 1e-3 ){
-          if (cnt > max) 
+          if (cnt > max)
             max = cnt
           if (cnt < min)
             min = cnt
@@ -117,7 +118,7 @@ object Benchmarks extends App {
       print(s"The average delay for client $clientNum is ${total/packetsReceived} and the total is $total. Max delay is $max and min is $min. ")
       println(s"For client $clientNum, $packetsReceived packets were received out of $numberTestPackets")
     })
-    println(s"\nThe average delay for all clients is ${grandTotal / numberClients}. Max delay is $grandMax and min is $grandMin. $grandPacketsDropped total packets were dropped") 
+    println(s"\nThe average delay for all clients is ${grandTotal / numberClients}. Max delay is $grandMax and min is $grandMin. $grandPacketsDropped total packets were dropped")
 
   }
 
