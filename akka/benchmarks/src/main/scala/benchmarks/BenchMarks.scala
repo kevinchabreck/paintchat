@@ -1,7 +1,10 @@
 package benchmarks
 
+import akka.actor.{Actor, ActorSystem, ActorRef, Props}
 import scala.sys.exit
 import scala.io.StdIn.readLine
+import scala.concurrent.Await
+import scala.concurrent.duration._
 import com.typesafe.config.ConfigFactory
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.{Draft_17}
@@ -9,7 +12,10 @@ import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
 import java.util.Random
 
+case class ReceivedMessage(message : String, timeStamp : Long)
+
 object Benchmarks extends App {
+  implicit val system = ActorSystem("tester-system")
 
   val configuration = ConfigFactory.load("application.conf")
   val numberClients = configuration.getInt("app.numberClients")
@@ -17,12 +23,7 @@ object Benchmarks extends App {
   val connectionSitePort = configuration.getString("app.connectionSitePort")
 
   // map of all clients that this app controls
-  val clientMap = collection.mutable.Map[Int, TestClient]()
-
-  // this generates random values for forced delay - currently not in use
-  val randomRange = 100.0
-  val base = 50.0
-  val ranGenerator = new Random(8)
+  val clientMap = collection.mutable.Map[Int, ActorRef]()
 
   // used to determine when the last packet was recieved to delay tests while traffic is going on
   var lastReceived : Long = 0
@@ -30,27 +31,36 @@ object Benchmarks extends App {
   // store the results of all the tests so that the information can be examined
   var delayArray = Array.ofDim[Double](numberClients, numberTestPackets)
 
-  class TestClient(id: Int, delay: Long) extends WebSocketClient(new URI(connectionSitePort), new Draft_17){
-    override def onMessage(message: String): Unit = {
-      //Thread.sleep(delay); - no forced delay for now
-      val timeReceived = System.currentTimeMillis
-      var splitCol : Seq[String] = message.split(":", 2)
-      if (splitCol(0).compareTo("PAINT") == 0){
-        var senderNum : Seq[String] = splitCol(1).split(" ", 4)
-        if (senderNum(0).compareTo(id.toString()) == 0){
-          // senderNum(1) is the packetNum and senderNum(2) is the timestamp
-          delayArray(id - 1)(senderNum(1).toInt - 1) = timeReceived - senderNum(2).toLong
-        }
-      }
-      lastReceived = timeReceived
-    }
-    override def onClose(code: Int, reason: String, remote: Boolean): Unit = {
-      println("This " + id + " is being closed!")
-      clientMap -= id
-    }
-    override def onOpen(handshakedata: ServerHandshake): Unit = println(s"There is a websocket opened with id $id and the delay is none for now")
-    override def onError(ex: Exception): Unit = println("Ahh, I am client " + id + " and I am in error! " + ex)
-  }
+  println(s"\nClients:$numberClients")
+  println(s"TestPacketsPerClient:$numberTestPackets")
+  println(s"ServerAddress:$connectionSitePort")
+
+  createClients()
+
+  waitOneSec()
+
+  println(s"\nClientsConnectFail:${numberClients - clientMap.size}")
+
+  readLine("\nPress ENTER to begin test...\n")
+
+  startTests()
+
+  waitOneSec()
+
+  recordResults()
+
+  readLine("\nHit ENTER to exit ...\n")
+  println("Shutting down benchmark framework\n")
+
+  // shut down all clients
+  clientMap.foreach({ case (clientNum, client) =>
+    client ! "close"
+  })
+
+  system.terminate()
+  Await.result(system.whenTerminated, Duration.Inf)
+
+  exit()
 
   def waitOneSec(){
     lastReceived = System.currentTimeMillis
@@ -58,21 +68,23 @@ object Benchmarks extends App {
   }
 
   def createClients() {
+    // this generates random values for forced delay - currently not in use
+    val randomRange = 100.0
+    val base = 50.0
+    val ranGenerator = new Random(8)
+
     (1 to numberClients).foreach({ cnt =>
-      val client = new TestClient(cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long])
-      client.connectBlocking()
-      client.send("GETBUFFER:")
-      client.send("USERNAME:" + cnt)
+      val client = system.actorOf(Props(classOf[TestClient], cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long], connectionSitePort, numberTestPackets))
+      client ! "connectBlocking"
+      client ! "start"
       clientMap(cnt) = client
     })
   }
 
   def startTests() {
     // Test one: Basic Test - Each client sends certain number of packets and measures the average delay
-    (1 to numberTestPackets).foreach({ packetNum =>
-      clientMap.foreach({ case (clientNum, client) =>
-        client.send(s"PAINT:$clientNum $packetNum ${System.currentTimeMillis} ${packetNum + 1} 5 #ffff00")
-      })
+    clientMap.foreach({ case (clientNum, client) =>
+      client ! "send"
     })
 
   }
@@ -115,33 +127,68 @@ object Benchmarks extends App {
       grandPacketsDropped += (numberTestPackets - packetsReceived)
 
       // print initial results
-      print(s"The average delay for client $clientNum is ${total/packetsReceived} and the total is $total. Max delay is $max and min is $min. ")
-      println(s"For client $clientNum, $packetsReceived packets were received out of $numberTestPackets")
+      val clientName : String = "c" + clientNum
+      println(s"\n$clientName.avgDelay:${total/packetsReceived}")
+      println(s"$clientName.totDelay:${total}")
+      println(s"$clientName.minDelay:${min}")
+      println(s"$clientName.maxDelay:${max}")
+      println(s"$clientName.sent:${numberTestPackets}")
+      println(s"$clientName.rec:${packetsReceived}")
     })
-    println(s"\nThe average delay for all clients is ${grandTotal / numberClients}. Max delay is $grandMax and min is $grandMin. $grandPacketsDropped total packets were dropped")
+
+    val clientName : String = "sum"
+    println(s"\n$clientName.avgDelay:${grandTotal / numberClients}")
+    println(s"$clientName.minDelay:${grandMin}")
+    println(s"$clientName.maxDelay:${grandMax}")
+    println(s"$clientName.sent:${numberTestPackets * numberClients}")
+    println(s"$clientName.rec:${numberTestPackets * numberClients - grandPacketsDropped}")
 
   }
+}
 
-  createClients()
+class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
+  var packetNum : Int = 1
 
-  waitOneSec()
-  readLine("Press ENTER to begin test...\n")
+  override def receive = {
+    case "connectBlocking" => super.connectBlocking()
 
-  startTests()
+    case "start" =>
+      super.send("GETBUFFER:")
+      super.send("USERNAME:" + id)
 
-  waitOneSec()
+    case "send" =>
+      super.send(s"PAINT:$id $packetNum ${System.currentTimeMillis} ${packetNum + 1} 5 #ffff00")
+      if (packetNum < numberTestPackets){
+        self ! "send"
+        packetNum += 1
+      }
 
-  recordResults()
+    case "close" => super.close()
 
-  readLine("Hit ENTER to exit ...\n")
-  println("Shutting down benchmark framework")
+    case ReceivedMessage(message, timeReceived) =>
+      var splitCol : Seq[String] = message.split(":", 2)
+      if (splitCol(0).compareTo("PAINT") == 0){
+        var senderNum : Seq[String] = splitCol(1).split(" ", 4)
+        if (senderNum(0).compareTo(id.toString()) == 0){
+          // senderNum(1) is the packetNum and senderNum(2) is the timestamp
+          Benchmarks.delayArray(id - 1)(senderNum(1).toInt - 1) = timeReceived - senderNum(2).toLong
+        }
+      }
+      Benchmarks.lastReceived = timeReceived
 
-  // shut down all clients
-  clientMap.foreach({ case (clientNum, client) =>
-    client.close()
-  })
+    case x => println("I have no idea how to handle what you just what you just sent me. " + x)
+  }
 
-  waitOneSec()
+  override def onMessage(message: String): Unit = {
+    //Thread.sleep(delay); - no forced delay for now
+    val timeReceived = System.currentTimeMillis
+    self ! ReceivedMessage(message, timeReceived)
+  }
+  override def onClose(code: Int, reason: String, remote: Boolean): Unit = {
+    println("This " + id + " is being closed!")
+    Benchmarks.clientMap -= id
+  }
+  override def onOpen(handshakedata: ServerHandshake): Unit = { }
+  override def onError(ex: Exception): Unit = println("Ahh, I am client " + id + " and I am in error! " + ex)
 
-  exit()
 }
