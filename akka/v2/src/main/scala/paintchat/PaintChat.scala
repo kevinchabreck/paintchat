@@ -35,7 +35,7 @@ object PaintChat extends App with MySslConfiguration {
 
   // helper method for local cluster testing
   def bindHTTPPort(port: Int): Unit = {
-    implicit val timeout = Timeout(1 seconds)
+    implicit val timeout = Timeout(5 seconds)
     val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
     val bind_result = Await.result(bind_future, timeout.duration)
     bind_result match {
