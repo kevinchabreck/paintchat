@@ -26,3 +26,6 @@ RUN sbt compile
 # rebuild with config
 COPY src/main/resources/application.conf src/main/resources/application.conf
 RUN sbt compile
+
+# add test script
+COPY test.sh test.sh
