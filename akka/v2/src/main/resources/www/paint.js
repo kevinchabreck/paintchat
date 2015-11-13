@@ -182,6 +182,10 @@ function init(container, width, height) {
     $('#chatInput').focus();
   }
 
+  function toggleUser(e){
+    $('#usersgroup').slideToggle("fast");
+  }
+
   function sendChat(e){
     if((e.type == "click") || $('#chatInput').is(':focus')){
       msg = $('#chatInput').val();
@@ -215,6 +219,7 @@ function init(container, width, height) {
   $('#sizeMinus').on('click tap', decSize);
   $('#selectEraser').on('click tap', startErase);
   $('#selectChat').on('click tap', toggleChat);
+  $('#selectUsers').on('click tap', toggleUser);
   $('#resetCanvas').on('click tap', sendReset);
 
   $(document).on('mousemove touchmove', move);
