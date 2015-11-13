@@ -23,6 +23,7 @@ class ServerWorker extends Actor with ActorLogging {
   val pbuffer = new ListBuffer[String]
   val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("update", self)
+  // println(s"I AM ${context.self.path}")
 
   def receive = {
     case SubscribeAck(Subscribe(topic, None, `self`)) => println(s"subscribed to topic: $topic")
@@ -32,6 +33,11 @@ class ServerWorker extends Actor with ActorLogging {
     case u:UserJoin => clients.keys.foreach(_ ! u)
     case u:UserLeft => clients.keys.foreach(_ ! u)
     case GetBuffer => sender ! PaintBuffer(pbuffer)
+    case BroadcastBuffer(p) => 
+      p.foreach(x => pbuffer += x)
+      // println(s"want to broadcast paintbuffer to all clients")
+      // println(s"clients: ${clients}")
+      // clients.keys.foreach(_ ! BroadcastBuffer(p))
 
     case Http.Connected(remoteAddress, localAddress) =>
       val connection = context.watch(context.actorOf(ClientWorker.props(sender, self, mediator)))

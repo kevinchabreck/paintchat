@@ -28,7 +28,7 @@ object ClientWorker {
 class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val mediator:ActorRef) extends HttpServiceActor with WebSocketServerWorker {
 
   var username = "anonymous"
-
+  
   override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
 
   def businessLogicNoUpgrade: Receive = {
