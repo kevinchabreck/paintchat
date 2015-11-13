@@ -3,7 +3,6 @@
 # run_test: runs a test iteration
 run_test() {
   echo "---------TEST $1---------"
-  echo "\n" | java -jar target/scala-2.11/paintchat-benchmarks-assembly-1.0.jar
   echo
 }
 
