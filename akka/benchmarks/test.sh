@@ -3,6 +3,7 @@
 # run_test: runs a test iteration
 run_test() {
   echo "---------TEST $1---------"
+  sbt run 
   echo
 }
 

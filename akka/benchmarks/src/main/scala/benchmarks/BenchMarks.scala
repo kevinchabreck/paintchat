@@ -39,9 +39,7 @@ object Benchmarks extends App {
 
   waitOneSec()
 
-  println(s"\nClientsConnectFail:${numberClients - clientMap.size}")
-
-  readLine("\nPress ENTER to begin test...\n")
+  println(s"\nClientsConnectFail:${numberClients - clientMap.size}\n")
 
   startTests()
 
@@ -49,8 +47,7 @@ object Benchmarks extends App {
 
   recordResults()
 
-  readLine("\nHit ENTER to exit ...\n")
-  println("Shutting down benchmark framework\n")
+  println("\nShutting down benchmark framework\n")
 
   // shut down all clients
   clientMap.foreach({ case (clientNum, client) =>
@@ -155,6 +152,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case "start" =>
       super.send("GETBUFFER:")
       super.send("USERNAME:" + id)
+      super.send("RESET:")
 
     case "send" =>
       super.send(s"PAINT:$id $packetNum ${System.currentTimeMillis} ${packetNum + 1} 5 #ffff00")
