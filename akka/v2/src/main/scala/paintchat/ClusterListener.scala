@@ -5,8 +5,8 @@ import akka.cluster.{Cluster, ClusterEvent, Member}
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberUp, MemberExited, MemberRemoved, UnreachableMember, ReachableMember, MemberEvent}
 import collection.mutable.{ListBuffer}
 
-sealed trait BufferUpdate
-case class BroadcastBuffer(pbuffer: ListBuffer[String]) extends BufferUpdate
+sealed trait NewNodeUpdate
+case object GetUpdated extends NewNodeUpdate
 
 class ClusterListener extends Actor with ActorLogging {
   var initialized = false
@@ -37,9 +37,9 @@ class ClusterListener extends Actor with ActorLogging {
     case event: ClusterEvent.MemberEvent => println(s"recieved ClusterEvent.MemberEvent: $event")
     case state: ClusterEvent.CurrentClusterState => println(s"recieved CurrentClusterState: $state")
 
-    case PaintBuffer(pbuffer) => 
-      println(s"recieved paintbuffer from leader")
-      context.system.actorSelection(cluster.selfAddress + "/user/paintchat-server") ! BroadcastBuffer(pbuffer)
+    case UpdatedBuffer(pbuffer,userlist,usercount) => 
+      // println(s"recieved paintbuffer from leader")
+      context.system.actorSelection(cluster.selfAddress + "/user/paintchat-server") ! UpdatedBuffer(pbuffer,userlist,usercount)
   }
 
   def handleNewMember(member:Member) = {
@@ -47,7 +47,8 @@ class ClusterListener extends Actor with ActorLogging {
     if (!initialized && (cluster.selfAddress != cluster.state.leader.get)) {
       // request buffer from leader's ServerWorker, and set initialized=true
       // send UpdateBuffer to local ServerWorker
-      context.system.actorSelection(cluster.state.leader.get + "/user/paintchat-server") ! GetBuffer
+      context.system.actorSelection(cluster.state.leader.get + "/user/paintchat-server") ! GetUpdated
+
       initialized = true
     }
   }
