@@ -61,7 +61,7 @@ object Benchmarks extends App {
 
   def waitOneSec(){
     lastReceived = System.currentTimeMillis
-    while (System.currentTimeMillis - lastReceived < 1000) {} // wait for one second to make sure system is ready to continue
+    while (System.currentTimeMillis - lastReceived < 2000) {} // wait for one second to make sure system is ready to continue
   }
 
   def createClients() {
@@ -155,7 +155,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
       super.send("RESET:")
 
     case "send" =>
-      super.send(s"PAINT:$id $packetNum ${System.currentTimeMillis} ${packetNum + 1} 5 #ffff00")
+      super.send(s"PAINT:${id * 10} ${packetNum * 10} ${id * 10} ${packetNum * 10} 5 #${id * 50000} ${System.currentTimeMillis}")
       if (packetNum < numberTestPackets){
         self ! "send"
         packetNum += 1
@@ -166,10 +166,10 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case ReceivedMessage(message, timeReceived) =>
       var splitCol : Seq[String] = message.split(":", 2)
       if (splitCol(0).compareTo("PAINT") == 0){
-        var senderNum : Seq[String] = splitCol(1).split(" ", 4)
-        if (senderNum(0).compareTo(id.toString()) == 0){
-          // senderNum(1) is the packetNum and senderNum(2) is the timestamp
-          Benchmarks.delayArray(id - 1)(senderNum(1).toInt - 1) = timeReceived - senderNum(2).toLong
+        var senderNum : Seq[String] = splitCol(1).split(" ", 7)
+        if (senderNum(0).compareTo((id * 10).toString()) == 0){
+          // senderNum(1) is the packetNum and senderNum(6) is the timestamp
+          Benchmarks.delayArray(id - 1)((senderNum(1).toInt / 10) - 1) = timeReceived - senderNum(6).toLong
         }
       }
       Benchmarks.lastReceived = timeReceived
@@ -185,6 +185,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
   override def onClose(code: Int, reason: String, remote: Boolean): Unit = {
     println("This " + id + " is being closed!")
     Benchmarks.clientMap -= id
+
   }
   override def onOpen(handshakedata: ServerHandshake): Unit = { }
   override def onError(ex: Exception): Unit = println("Ahh, I am client " + id + " and I am in error! " + ex)

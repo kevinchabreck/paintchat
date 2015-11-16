@@ -283,8 +283,9 @@ function init(container, width, height) {
     function paint(e) {
         var params = e.data.split(':');
         var arr = params[1].split(' ');
-        params = arr.splice(0,5);
+        params = arr.splice(0,6);
         params.push(arr.join(' '));
+	console.log("Timestamp " + params[6]);
         ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
     }
 
@@ -406,7 +407,7 @@ function init(container, width, height) {
         var paintbuffer = JSON.parse(params[1]);
         for(var i in paintbuffer){
             arr = paintbuffer[i].split(' ');
-            params = arr.splice(0,5);
+            params = arr.splice(0,6);
             params.push(arr.join(' '));
             ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
         }

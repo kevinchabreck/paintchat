@@ -89,7 +89,7 @@ object Server extends App {
 class PaintchatFlowControl(paintchatActor: ActorRef) {
 
   def websocketFlow(user: String): Flow[Message, Message, _] =
-    Flow(Source.actorRef[PaintchatMessage](bufferSize = 5, OverflowStrategy.fail)) {
+    Flow(Source.actorRef[PaintchatMessage](bufferSize = 10, OverflowStrategy.dropTail)) {
       implicit builder =>
         chatSource => //source provideed as argument
 

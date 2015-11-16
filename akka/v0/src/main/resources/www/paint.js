@@ -116,9 +116,9 @@ function init(container, width, height) {
         }
         oldX = e.pageX - rect.left;
         oldY = e.pageY - rect.top;
-        console.log("move(): X: "+oldX+" Y: "+oldY);
-        console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
-        console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
+        // console.log("move(): X: "+oldX+" Y: "+oldY);
+        // console.log("e.pageX: "+e.pageX+" e.pageY: "+e.pageY);
+        // console.log("rect.left: "+rect.left+" rect.top: "+rect.top);
     }
 
     function start(e) {
@@ -283,8 +283,9 @@ function init(container, width, height) {
     function paint(e) {
         var params = e.data.split(':');
         var arr = params[1].split(' ');
-        params = arr.splice(0,5);
+        params = arr.splice(0,6);
         params.push(arr.join(' '));
+	console.log("Timestamp " + params[6]);
         ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
     }
 
@@ -406,7 +407,7 @@ function init(container, width, height) {
         var paintbuffer = JSON.parse(params[1]);
         for(var i in paintbuffer){
             arr = paintbuffer[i].split(' ');
-            params = arr.splice(0,5);
+            params = arr.splice(0,6);
             params.push(arr.join(' '));
             ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
         }
@@ -444,8 +445,10 @@ function init(container, width, height) {
     var wsuri;
     if (window.location.protocol === "file:") {
        wsuri = "ws://localhost:"+port;
+       // wsuri = "ws://localhost:"+port+"/ws";
     } else {
        wsuri = "ws://"+window.location.hostname+":"+port;
+       // wsuri = "ws://"+window.location.hostname+":"+port+"/ws";
     }
 
     // open websocket
@@ -500,6 +503,8 @@ function init(container, width, height) {
             // noty({text: '[noty] '+e.data});
             var params = e.data.split(':');
             var header = params[0];
+            console.log("header:"+header)
+            console.log("message:"+e.data)
             handlers[header](e);
         };
     }
