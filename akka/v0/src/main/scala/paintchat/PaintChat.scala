@@ -112,7 +112,7 @@ class WebSocketWorker(val serverConnection: ActorRef, val parent: ActorRef) exte
 
     case Push(msg) => send(TextFrame(msg))
 
-    case x: FrameCommandFailed => println(s"frame command failed: $x")
+    case x: FrameCommandFailed => { } //println(s"frame command failed: $x")
 
     case x: ConnectionClosed =>
       parent ! x

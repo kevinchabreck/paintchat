@@ -39,13 +39,19 @@ object Benchmarks extends App {
 
   waitOneSec()
 
+  val startTime = System.currentTimeMillis
+
   println(s"\nClientsConnectFail:${numberClients - clientMap.size}\n")
 
   startTests()
 
   waitOneSec()
 
+  val endTime = System.currentTimeMillis
+
   recordResults()
+
+  println("\nTotal Time is " + (endTime - startTime) + "\n")
 
   println("\nShutting down benchmark framework\n")
 
@@ -145,6 +151,8 @@ object Benchmarks extends App {
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
   var packetNum : Int = 1
+  val pixelSpacingX : Int = 7
+  val pixelSpacingY : Int = 4
 
   override def receive = {
     case "connectBlocking" => super.connectBlocking()
@@ -155,7 +163,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
       super.send("RESET:")
 
     case "send" =>
-      super.send(s"PAINT:${id * 10} ${packetNum * 10} ${id * 10} ${packetNum * 10} 5 #${id * 50000} ${System.currentTimeMillis}")
+      super.send(s"PAINT:${id * pixelSpacingX} ${packetNum * pixelSpacingY} ${id * pixelSpacingX} ${packetNum * pixelSpacingY} 5 #${id * 50000} ${System.currentTimeMillis}")
       if (packetNum < numberTestPackets){
         self ! "send"
         packetNum += 1
@@ -167,9 +175,9 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
       var splitCol : Seq[String] = message.split(":", 2)
       if (splitCol(0).compareTo("PAINT") == 0){
         var senderNum : Seq[String] = splitCol(1).split(" ", 7)
-        if (senderNum(0).compareTo((id * 10).toString()) == 0){
+        if (senderNum(0).compareTo((id * pixelSpacingX).toString()) == 0){
           // senderNum(1) is the packetNum and senderNum(6) is the timestamp
-          Benchmarks.delayArray(id - 1)((senderNum(1).toInt / 10) - 1) = timeReceived - senderNum(6).toLong
+          Benchmarks.delayArray(id - 1)((senderNum(1).toInt / pixelSpacingY) - 1) = timeReceived - senderNum(6).toLong
         }
       }
       Benchmarks.lastReceived = timeReceived
