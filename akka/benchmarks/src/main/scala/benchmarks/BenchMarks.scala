@@ -21,6 +21,10 @@ object Benchmarks extends App {
   val numberClients = configuration.getInt("app.numberClients")
   val numberTestPackets = configuration.getInt("app.numberTestPackets")
   val connectionSitePort = configuration.getString("app.connectionSitePort")
+  val numDistributedClients = configuration.getInt("app.numDistributedClients")
+  val distributedTest = configuration.getBoolean("app.distributedTest")
+  val distributedClientsRaw = configuration.getString("app.distributedClients")
+  val distributedClients : Seq[String] = distributedClientsRaw.split(",", 3)
 
   // map of all clients that this app controls
   val clientMap = collection.mutable.Map[Int, ActorRef]()
@@ -76,8 +80,16 @@ object Benchmarks extends App {
     val base = 50.0
     val ranGenerator = new Random(8)
 
+
     (1 to numberClients).foreach({ cnt =>
-      val client = system.actorOf(Props(classOf[TestClient], cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long], connectionSitePort, numberTestPackets))
+
+      var connection : String = connectionSitePort      
+      if (distributedTest == true){
+        val cntMod3 = (cnt % 3)
+        connection = distributedClients(cntMod3)
+      }
+
+      val client = system.actorOf(Props(classOf[TestClient], cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long], connection, numberTestPackets))
       client ! "connectBlocking"
       client ! "start"
       clientMap(cnt) = client
@@ -147,6 +159,7 @@ object Benchmarks extends App {
     println(s"$clientName.rec:${numberTestPackets * numberClients - grandPacketsDropped}")
 
   }
+
 }
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
@@ -172,9 +185,9 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case "close" => super.close()
 
     case ReceivedMessage(message, timeReceived) =>
-      var splitCol : Seq[String] = message.split(":", 2)
+      val splitCol : Seq[String] = message.split(":", 2)
       if (splitCol(0).compareTo("PAINT") == 0){
-        var senderNum : Seq[String] = splitCol(1).split(" ", 7)
+        val senderNum : Seq[String] = splitCol(1).split(" ", 7)
         if (senderNum(0).compareTo((id * pixelSpacingX).toString()) == 0){
           // senderNum(1) is the packetNum and senderNum(6) is the timestamp
           Benchmarks.delayArray(id - 1)((senderNum(1).toInt / pixelSpacingY) - 1) = timeReceived - senderNum(6).toLong
