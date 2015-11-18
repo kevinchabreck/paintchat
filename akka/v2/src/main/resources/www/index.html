@@ -19,6 +19,9 @@
     <link rel="stylesheet" href="js/alertify/alertify.core.css">
     <link rel="stylesheet" href="js/alertify/alertify.bootstrap.css">
 
+    <script type="text/javascript" src="js/jdenticon/jdenticon-1.3.2.min.js"></script>
+    <script type="text/javascript" src="js/js-md5/js-md5.js"></script>
+
     <script type="text/javascript" src="js/noty/jquery.noty.packaged.min.js"></script>
     <link rel="stylesheet" href="js/animate/animate.css">
 
@@ -67,6 +70,11 @@
             </div>
           </div>
 
+          <div id="usersgroup" style="display:none" class="row">
+            <!-- <canvas id="denticon" width="35" height="35" data-jdenticon-hash="ff8adece0631821959f443c9d956fc39"
+            data-toggle="tooltip" data-placement="bottom" title="user1"></canvas>  -->
+          </div>
+
           <div id="toolSpace" class="row row-centered">
             <div class="btn-group" role="group" aria-label="...">
               <button id="colorPalette" type="button" class="active toolbutton btn btn-default dropdown-toggle"
@@ -92,7 +100,7 @@
               <button id="selectUsers" type="button" class="toolbutton btn btn-default"
                       data-toggle="tooltip" data-placement="top" title="Users">
                 <span type='span' class="tool glyphicon glyphicon-user"></span>
-                <span class="badge badge-notify">3</span>
+                <span id="Usersbadge" class="badge badge-notify"></span>
               </button>
               <button id="resetCanvas" type="button" class="toolbutton btn btn-default"
                       data-toggle="tooltip" data-placement="top" title="Reset">

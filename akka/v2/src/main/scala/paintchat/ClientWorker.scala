@@ -21,6 +21,7 @@ case class UserName(username:String) extends ClientUpdate
 case class Chat(username:String, message:String, client:ActorRef) extends ClientUpdate
 case class Reset(username:String, client:ActorRef) extends ClientUpdate
 case object GetBuffer extends ClientUpdate
+case object GetUserList extends ClientUpdate
 
 object ClientWorker {
   def props(serverConnection:ActorRef, parent:ActorRef, mediator:ActorRef) = Props(classOf[ClientWorker], serverConnection, parent, mediator)
@@ -49,11 +50,16 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
     case x:ConnectionClosed => context.stop(self)
     case frame:TextFrame => handleTextFrame(frame)
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
-    case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
-    case UserLeft(username) => send(TextFrame(s"INFO:$username has left"))
+    case UserJoin(username, client) => 
+      if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
+    case UserLeft(username) => 
+      send(TextFrame(s"INFO:$username has left"))
     // case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"USERJOIN:$username"))}
     // case UserLeft(username) => send(TextFrame(s"USERLEFT:$username"))
     case PaintBuffer(pbuffer) => send(TextFrame(s"PAINTBUFFER:${Json.toJson(pbuffer)}"))
+    case UserList(userlist) => send(TextFrame(s"USERLIST:"+userlist.mkString(" ")))
+    case UserCount(usercount) => send(TextFrame(s"USERCOUNT:${usercount}"))
+
 
     case Accepted(username) =>
       send(TextFrame(s"ACCEPTED:$username"))
@@ -75,8 +81,10 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
       case "PAINT"::data::_ => mediator ! Publish("update", Paint(data))
       case "CHAT"::message::_ => mediator ! Publish("update", Chat(username,message,self))
       case "RESET"::_ => mediator ! Publish("update", Reset(username, self))
-      case "USERNAME"::username::_ => parent ! UserName(username)
+      case "USERNAME"::username::_ => 
+        parent ! UserName(username)
       case "GETBUFFER"::_ => parent ! GetBuffer
+      case "GETUSERLIST"::_ => parent ! GetUserList
       case _ => println(s"unrecognized textframe: ${frame.payload.utf8String}")
     }
   }
