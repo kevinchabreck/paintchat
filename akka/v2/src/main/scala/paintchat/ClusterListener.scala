@@ -7,7 +7,6 @@ import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberUp, MemberExited, 
 class ClusterListener extends Actor with ActorLogging {
   var initialized = false
   val cluster = Cluster(context.system)
-  // cluster.join()
 
   override def preStart(): Unit = {
     println(s"starting ClusterListener: ${self.path.name}")
