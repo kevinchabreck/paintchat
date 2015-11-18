@@ -21,6 +21,10 @@ object Benchmarks extends App {
   val numberClients = configuration.getInt("app.numberClients")
   val numberTestPackets = configuration.getInt("app.numberTestPackets")
   val connectionSitePort = configuration.getString("app.connectionSitePort")
+  val numDistributedClients = configuration.getInt("app.numDistributedClients")
+  val distributedTest = configuration.getBoolean("app.distributedTest")
+  val distributedClientsRaw = configuration.getString("app.distributedClients")
+  val distributedClients : Seq[String] = distributedClientsRaw.split(",", 3)
 
   // map of all clients that this app controls
   val clientMap = collection.mutable.Map[Int, ActorRef]()
@@ -39,18 +43,21 @@ object Benchmarks extends App {
 
   waitOneSec()
 
-  println(s"\nClientsConnectFail:${numberClients - clientMap.size}")
+  val startTime = System.currentTimeMillis
 
-  readLine("\nPress ENTER to begin test...\n")
+  println(s"\nClientsConnectFail:${numberClients - clientMap.size}\n")
 
   startTests()
 
   waitOneSec()
 
+  val endTime = System.currentTimeMillis
+
   recordResults()
 
-  readLine("\nHit ENTER to exit ...\n")
-  println("Shutting down benchmark framework\n")
+  println("\nTotal Time is " + (endTime - startTime) + "\n")
+
+  println("\nShutting down benchmark framework\n")
 
   // shut down all clients
   clientMap.foreach({ case (clientNum, client) =>
@@ -64,7 +71,7 @@ object Benchmarks extends App {
 
   def waitOneSec(){
     lastReceived = System.currentTimeMillis
-    while (System.currentTimeMillis - lastReceived < 1000) {} // wait for one second to make sure system is ready to continue
+    while (System.currentTimeMillis - lastReceived < 2000) {} // wait for one second to make sure system is ready to continue
   }
 
   def createClients() {
@@ -73,8 +80,16 @@ object Benchmarks extends App {
     val base = 50.0
     val ranGenerator = new Random(8)
 
+
     (1 to numberClients).foreach({ cnt =>
-      val client = system.actorOf(Props(classOf[TestClient], cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long], connectionSitePort, numberTestPackets))
+
+      var connection : String = connectionSitePort      
+      if (distributedTest == true){
+        val cntMod3 = (cnt % 3)
+        connection = distributedClients(cntMod3)
+      }
+
+      val client = system.actorOf(Props(classOf[TestClient], cnt, (ranGenerator.nextDouble() * randomRange + base).asInstanceOf[Long], connection, numberTestPackets))
       client ! "connectBlocking"
       client ! "start"
       clientMap(cnt) = client
@@ -144,10 +159,13 @@ object Benchmarks extends App {
     println(s"$clientName.rec:${numberTestPackets * numberClients - grandPacketsDropped}")
 
   }
+
 }
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
   var packetNum : Int = 1
+  val pixelSpacingX : Int = 7
+  val pixelSpacingY : Int = 4
 
   override def receive = {
     case "connectBlocking" => super.connectBlocking()
@@ -155,9 +173,10 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case "start" =>
       super.send("GETBUFFER:")
       super.send("USERNAME:" + id)
+      super.send("RESET:")
 
     case "send" =>
-      super.send(s"PAINT:$id $packetNum ${System.currentTimeMillis} ${packetNum + 1} 5 #ffff00")
+      super.send(s"PAINT:${id * pixelSpacingX} ${packetNum * pixelSpacingY} ${id * pixelSpacingX} ${packetNum * pixelSpacingY} 5 #${id * 50000} ${System.currentTimeMillis}")
       if (packetNum < numberTestPackets){
         self ! "send"
         packetNum += 1
@@ -166,12 +185,12 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case "close" => super.close()
 
     case ReceivedMessage(message, timeReceived) =>
-      var splitCol : Seq[String] = message.split(":", 2)
+      val splitCol : Seq[String] = message.split(":", 2)
       if (splitCol(0).compareTo("PAINT") == 0){
-        var senderNum : Seq[String] = splitCol(1).split(" ", 4)
-        if (senderNum(0).compareTo(id.toString()) == 0){
-          // senderNum(1) is the packetNum and senderNum(2) is the timestamp
-          Benchmarks.delayArray(id - 1)(senderNum(1).toInt - 1) = timeReceived - senderNum(2).toLong
+        val senderNum : Seq[String] = splitCol(1).split(" ", 7)
+        if (senderNum(0).compareTo((id * pixelSpacingX).toString()) == 0){
+          // senderNum(1) is the packetNum and senderNum(6) is the timestamp
+          Benchmarks.delayArray(id - 1)((senderNum(1).toInt / pixelSpacingY) - 1) = timeReceived - senderNum(6).toLong
         }
       }
       Benchmarks.lastReceived = timeReceived
@@ -187,6 +206,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
   override def onClose(code: Int, reason: String, remote: Boolean): Unit = {
     println("This " + id + " is being closed!")
     Benchmarks.clientMap -= id
+
   }
   override def onOpen(handshakedata: ServerHandshake): Unit = { }
   override def onError(ex: Exception): Unit = println("Ahh, I am client " + id + " and I am in error! " + ex)
