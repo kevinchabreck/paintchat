@@ -278,9 +278,11 @@ function init(container, width, height) {
 
     // functions for handling different headers
     // possible message headers:
-    // PAINT, CHAT, INFO, RESET, ACCEPTED, DENIED, PAINTBUFFER, USERS
+    // PAINT, CHAT, INFO, RESET, ACCEPTED, DENIED, PAINTBUFFER, USERS, BUFFERSIZE
 
+    var numberMessagesLocal = 0; //represents number of paint messages received locally
     function paint(e) {
+	numberMessagesLocal += 1;
         var params = e.data.split(':');
         var arr = params[1].split(' ');
         params = arr.splice(0,6);
@@ -405,6 +407,7 @@ function init(container, width, height) {
     function paintbuffer(e) {
         var params = e.data.split(':');
         var paintbuffer = JSON.parse(params[1]);
+	numberMessagesLocal = paintbuffer.length
         for(var i in paintbuffer){
             arr = paintbuffer[i].split(' ');
             params = arr.splice(0,6);
@@ -438,6 +441,14 @@ function init(container, width, height) {
             maxVisible: 0,
             theme: 'relax'
         });
+    }
+
+    function buffersize(e) {
+	var params = e.data.split(':');
+	console.log(numberMessagesLocal + " " + params[1])
+	if ( params[1] > numberMessagesLocal){
+	    ws.send('GETBUFFER:');
+	}
     }
 
     // determine websocket URI
@@ -495,13 +506,24 @@ function init(container, width, height) {
             'DENIED': denied,
             'PAINTBUFFER': paintbuffer,
             'USERS': users,
-            'ERROR': servererror
+            'ERROR': servererror,
+	    'BUFFERSIZE': buffersize
         }
 
+	var timer = setInterval(requestBufferSize, 1000);
+	var lastReceived = new Date().getTime();
+
+	function requestBufferSize() {	    
+	    if ( new Date().getTime() - lastReceived > 100) {
+		ws.send('GETBUFFERSIZE:');
+	    }
+	}
+	
         ws.onmessage = function(e) {
-            // alertify.log("server: "+e.data);
+            lastReceived = new Date().getTime(); 
+	    // alertify.log("server: "+e.data);
             // noty({text: '[noty] '+e.data});
-            var params = e.data.split(':');
+	    var params = e.data.split(':');
             var header = params[0];
             console.log("header:"+header)
             console.log("message:"+e.data)
