@@ -16,6 +16,7 @@ object PaintChat extends App with MySslConfiguration {
   val interface = config.getString("app.interface")
   val default_http_port = config.getInt("app.port")
   val default_tcp_port = config.getInt("akka.remote.netty.tcp.port")
+  println("starting app with seeds: "+config.getList("akka.cluster.seed-nodes"))
 
   // helper method for local cluster testing
   def bindTCPPort(port: Int): ActorSystem = {
@@ -49,9 +50,6 @@ object PaintChat extends App with MySslConfiguration {
     }
   }
 
-  val seeds = config.getList("akka.cluster.seed-nodes")
-  println(s"starting app with seeds: $seeds")
-
   implicit val system = bindTCPPort(default_tcp_port)
   val cluster = system.actorOf(Props(classOf[ClusterListener]), "paintchat-cluster")
   val server = system.actorOf(Props(classOf[ServerWorker]), "paintchat-server")
@@ -59,21 +57,4 @@ object PaintChat extends App with MySslConfiguration {
   println("shutting down server")
   system.terminate()
   Await.result(system.whenTerminated, Duration.Inf)
-
-  // implicit val system = ActorSystem("paintchat-system")
-  // val config = system.settings.config
-  // val server = system.actorOf(Props(classOf[Server]), "paintchat-server")
-  // val interface = config.getString("app.interface")
-  // val defaultport = config.getInt("app.port")
-  // implicit val timeout = Timeout(1 seconds)
-  // val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
-  // val bind_result = Await.result(bind_future, timeout.duration)
-  // bind_result match {
-  //   // case Http.Bound(x) => scala.io.StdIn.readLine(s"server listening on $x (press ENTER to exit)\n")
-  //   case Http.Bound(x) => scala.io.StdIn.readLine(s"server listening on http:/$x (press ENTER to exit)\n")
-  //   case x: Http.CommandFailed => println(s"Error: Failed to bind to $interface:$port: $x")
-  // }
-  // println("shutting down server")
-  // system.terminate()
-  // Await.result(system.whenTerminated, Duration.Inf)
 }
