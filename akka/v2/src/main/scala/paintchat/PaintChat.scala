@@ -49,6 +49,9 @@ object PaintChat extends App with MySslConfiguration {
     }
   }
 
+  val seeds = config.getList("akka.cluster.seed-nodes")
+  println(s"starting app with seeds: $seeds")
+
   implicit val system = bindTCPPort(default_tcp_port)
   val cluster = system.actorOf(Props(classOf[ClusterListener]), "paintchat-cluster")
   val server = system.actorOf(Props(classOf[ServerWorker]), "paintchat-server")

@@ -182,6 +182,10 @@ function init(container, width, height) {
     $('#chatInput').focus();
   }
 
+  function toggleUser(e){
+    $('#usersgroup').slideToggle("fast");
+  }
+
   function sendChat(e){
     if((e.type == "click") || $('#chatInput').is(':focus')){
       msg = $('#chatInput').val();
@@ -215,6 +219,7 @@ function init(container, width, height) {
   $('#sizeMinus').on('click tap', decSize);
   $('#selectEraser').on('click tap', startErase);
   $('#selectChat').on('click tap', toggleChat);
+  $('#selectUsers').on('click tap', toggleUser);
   $('#resetCanvas').on('click tap', sendReset);
 
   $(document).on('mousemove touchmove', move);
@@ -237,7 +242,7 @@ function init(container, width, height) {
   function paint(e) {
     var params = e.data.split(':');
     var arr = params[1].split(' ');
-    params = arr.splice(0,5);
+    params = arr.splice(0,6);
     params.push(arr.join(' '));
     ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
   }
@@ -261,6 +266,14 @@ function init(container, width, height) {
   }
 
   function info(e) {
+    var username = e.data.split(":")[1].split(" ")[0];
+    var msg = e.data.split(":")[1].split(" ")[2];
+    if (msg == "joined"){
+      createUserIcon(username);
+    }else{
+      deleteUserIcon(username);
+    }
+
     var info = e.data.replace('INFO:','');
     noty({
       text: "user "+info,
@@ -309,8 +322,11 @@ function init(container, width, height) {
     ctx.clear();
   }
 
+  // var usercount = 0;
   function accepted(e) {
+    // document.getElementById("Usersbadge").innerHTML = usercount;
     var username = e.data.replace('ACCEPTED:','');
+    createUserIcon(username); 
     noty({
       text: 'connected to server as "'+username+'"',
       layout: 'top',
@@ -350,11 +366,29 @@ function init(container, width, height) {
     var paintbuffer = JSON.parse(params[1]);
     for(var i in paintbuffer){
       arr = paintbuffer[i].split(' ');
-      params = arr.splice(0,5);
+      params = arr.splice(0,6);
       params.push(arr.join(' '));
       ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
     }
   }
+
+  function usercoutupdate(e) {
+    var usercount = e.data.split(':')[1];
+    document.getElementById("Usersbadge").innerHTML = usercount;
+  }
+
+
+  function userlist(e) {
+    var users = e.data.split(':')[1].split(" ");
+    if (users != ''){
+      for(var i in users){
+          createUserIcon(users[i]);
+      }
+    }  
+    
+  }
+
+
 
   function users(e) {
     // var params = e.data.split(':');
@@ -367,6 +401,8 @@ function init(container, width, height) {
     // }
     // userlistSpace.innerHTML = ul;
   }
+
+
 
   function servererror(e) {
     noty({
@@ -393,6 +429,8 @@ function init(container, width, height) {
     'DENIED': denied,
     'PAINTBUFFER': paintbuffer,
     'USERS': users,
+    'USERCOUNT': usercoutupdate,
+    'USERLIST': userlist,
     'ERROR': servererror
   }
 
@@ -412,6 +450,7 @@ function init(container, width, height) {
   if(ws){
     ws.onopen = function() {
       ws.send('GETBUFFER:');
+      ws.send('GETUSERLIST:');
       alertify.prompt("Enter your username", function (e, username) {
         if (e) {
           ws.send('USERNAME:' + username);
@@ -440,6 +479,21 @@ function init(container, width, height) {
   }
 
   ctx.clear();
+}
+
+function deleteUserIcon(username){
+
+  $("#"+username).remove();
+}
+
+function createUserIcon(username){
+
+    $("#usersgroup").append($("<canvas/>")
+            .attr({id: username, width: 35, height: 35})
+            .tooltip({title: username, placement: "top"})
+            .jdenticon(md5(username))
+            );
+
 }
 
 window.onload = function(){
