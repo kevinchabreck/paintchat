@@ -166,6 +166,9 @@ class PaintchatActor() extends Actor {
         case "GETBUFFER"::_ =>
           participants(user)._1 ! PaintchatMessage(user, "PAINTBUFFER:"+Json.toJson(paintbuffer))
 
+        case "GETBUFFERSIZE"::_ =>
+          participants(user)._1 ! PaintchatMessage(user, "BUFFERSIZE:"+paintbuffer.size)
+
         case "USERNAME"::username::_ =>
           val tempRef : ActorRef = participants(user)._1
           participants += user -> (tempRef, username)

@@ -5,6 +5,7 @@ import scala.sys.exit
 import scala.io.StdIn.readLine
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.collection.immutable.StringOps
 import com.typesafe.config.ConfigFactory
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.{Draft_17}
@@ -56,6 +57,8 @@ object Benchmarks extends App {
   recordResults()
 
   println("\nTotal Time is " + (endTime - startTime) + "\n")
+
+  readLine()
 
   println("\nShutting down benchmark framework\n")
 
@@ -166,6 +169,10 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
   var packetNum : Int = 1
   val pixelSpacingX : Int = 7
   val pixelSpacingY : Int = 4
+  val hexStringR : String = "%02X".format(if (id > 40) (255 - (id * 2)) else 0)
+  val hexStringG : String = "%02X".format(-(id * id * 1 / 10) + (102 / 10 * id))
+  val hexStringB : String = "%02X".format(if (id > 60) 0 else (255 - (id * 2)))
+  val hexString : String = hexStringR + hexStringG + hexStringB
 
   override def receive = {
     case "connectBlocking" => super.connectBlocking()
@@ -176,7 +183,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
       super.send("RESET:")
 
     case "send" =>
-      super.send(s"PAINT:${id * pixelSpacingX} ${packetNum * pixelSpacingY} ${id * pixelSpacingX} ${packetNum * pixelSpacingY} 5 #${id * 50000} ${System.currentTimeMillis}")
+      super.send(s"PAINT:${id * pixelSpacingX} ${packetNum * pixelSpacingY} ${id * pixelSpacingX} ${packetNum * pixelSpacingY} 5 #${hexString} ${System.currentTimeMillis}")
       if (packetNum < numberTestPackets){
         self ! "send"
         packetNum += 1
