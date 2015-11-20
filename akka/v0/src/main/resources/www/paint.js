@@ -285,7 +285,7 @@ function init(container, width, height) {
         var arr = params[1].split(' ');
         params = arr.splice(0,6);
         params.push(arr.join(' '));
-	console.log("Timestamp " + params[6]);
+        console.log("Timestamp " + params[6]);
         ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
     }
 
@@ -441,25 +441,27 @@ function init(container, width, height) {
     }
 
     // determine websocket URI
-    var port = "8080"
-    var wsuri;
-    if (window.location.protocol === "file:") {
-       wsuri = "ws://localhost:"+port;
-       // wsuri = "ws://localhost:"+port+"/ws";
-    } else {
-       wsuri = "ws://"+window.location.hostname+":"+port;
-       // wsuri = "ws://"+window.location.hostname+":"+port+"/ws";
-    }
+    // var port = "8080"
+    // var wsuri;
+    // if (window.location.protocol === "file:") {
+    //    wsuri = "ws://localhost:"+port;
+    //    // wsuri = "ws://localhost:"+port+"/ws";
+    // } else {
+    //    wsuri = "ws://"+window.location.hostname+":"+port;
+    //    // wsuri = "ws://"+window.location.hostname+":"+port+"/ws";
+    // }
+
+    var wsuri = window.location.href.replace("http", "ws");
+    console.log("wsuri: "+wsuri)
 
     // open websocket
     var ws = null;
     if ("WebSocket" in window) {
-       ws = new WebSocket(wsuri);
+      ws = new WebSocket(wsuri);
     } else if ("MozWebSocket" in window) {
-       ws = new MozWebSocket(wsuri);
+      ws = new MozWebSocket(wsuri);
     } else {
-       // alertify.error("Browser does not support WebSocket!");
-       servererror({message:"Browser does not support WebSocket!"});
+      servererror({message:"Browser does not support WebSocket!"});
     }
 
     if(ws){

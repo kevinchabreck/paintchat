@@ -31,7 +31,7 @@ object Server extends App with MySslConfiguration {
   val interface = config.getString("app.interface")
   val port = config.getInt("app.port")
 
-  implicit val timeout = Timeout(1 seconds)
+  implicit val timeout = Timeout(5 seconds)
   val bind_future = ask(IO(UHttp), Http.Bind(server, interface, port))
   val bind_result = Await.result(bind_future, timeout.duration)
   bind_result match {
