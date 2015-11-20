@@ -38,15 +38,15 @@ object Benchmarks extends App {
 
   println(s"\nClients:$numberClients")
   println(s"TestPacketsPerClient:$numberTestPackets")
-  println(s"ServerAddress:$connectionSitePort")
+  println(s"ServerAddress:$connectionSitePort\n")
 
   createClients()
 
   waitOneSec()
 
-  val startTime = System.currentTimeMillis
+  println(s"ClientsConnectFail:${numberClients - clientMap.size}\n")
 
-  println(s"\nClientsConnectFail:${numberClients - clientMap.size}\n")
+  val startTime = System.currentTimeMillis
 
   startTests()
 
@@ -56,11 +56,17 @@ object Benchmarks extends App {
 
   recordResults()
 
-  println("\nTotal Time is " + (endTime - startTime) + "\n")
+  println("Total Time is " + (endTime - startTime) + "\n")
+
+  val requestPerSec : Double = (numberTestPackets.asInstanceOf[Double] * numberClients) / ((endTime.asInstanceOf[Double] - startTime.asInstanceOf[Double] - 2000) / 1000.0)
+
+  println(s"Request per second is ${requestPerSec}")
+
+  println(s"ClientsConnectEnd:${clientMap.size}/$numberClients\n")
 
   readLine()
 
-  println("\nShutting down benchmark framework\n")
+  println("Shutting down benchmark framework\n")
 
   // shut down all clients
   clientMap.foreach({ case (clientNum, client) =>
@@ -167,6 +173,7 @@ object Benchmarks extends App {
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
   var packetNum : Int = 1
+
   val pixelSpacingX : Int = 7
   val pixelSpacingY : Int = 4
   val hexStringR : String = "%02X".format(if (id > 40) (255 - (id * 2)) else 0)
