@@ -50,9 +50,9 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
     case x:ConnectionClosed => context.stop(self)
     case frame:TextFrame => handleTextFrame(frame)
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
-    case UserJoin(username, client) => 
+    case UserJoin(username, client) =>
       if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
-    case UserLeft(username) => 
+    case UserLeft(username) =>
       send(TextFrame(s"INFO:$username has left"))
     // case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"USERJOIN:$username"))}
     // case UserLeft(username) => send(TextFrame(s"USERLEFT:$username"))
@@ -81,8 +81,7 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
       case "PAINT"::data::_ => mediator ! Publish("update", Paint(data))
       case "CHAT"::message::_ => mediator ! Publish("update", Chat(username,message,self))
       case "RESET"::_ => mediator ! Publish("update", Reset(username, self))
-      case "USERNAME"::username::_ => 
-        parent ! UserName(username)
+      case "USERNAME"::username::_ => parent ! UserName(username)
       case "GETBUFFER"::_ => parent ! GetBuffer
       case "GETUSERLIST"::_ => parent ! GetUserList
       case _ => println(s"unrecognized textframe: ${frame.payload.utf8String}")
@@ -108,7 +107,8 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
       "status" -> "Up",
       "uptime" -> context.system.uptime,
       "client_connections" -> connections,
-      "cluster" -> Json.obj(
+      "cluster_address" -> Cluster(context.system).selfAddress,
+      "cluster_state" -> Json.obj(
         "leader" -> clusterstatus.leader,
         "members" -> clusterstatus.members
       )

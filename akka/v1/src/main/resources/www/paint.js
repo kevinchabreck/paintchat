@@ -282,12 +282,12 @@ function init(container, width, height) {
 
     var numberMessagesLocal = 0; //represents number of paint messages received locally
     function paint(e) {
-	numberMessagesLocal += 1;
+    numberMessagesLocal += 1;
         var params = e.data.split(':');
         var arr = params[1].split(' ');
         params = arr.splice(0,6);
         params.push(arr.join(' '));
-	console.log("Timestamp " + params[6]);
+    console.log("Timestamp " + params[6]);
         ctx.draw(params[0], params[1], params[2], params[3], params[4], params[5]);
     }
 
@@ -407,7 +407,7 @@ function init(container, width, height) {
     function paintbuffer(e) {
         var params = e.data.split(':');
         var paintbuffer = JSON.parse(params[1]);
-	numberMessagesLocal = paintbuffer.length
+        numberMessagesLocal = paintbuffer.length;
         for(var i in paintbuffer){
             arr = paintbuffer[i].split(' ');
             params = arr.splice(0,6);
@@ -444,23 +444,15 @@ function init(container, width, height) {
     }
 
     function buffersize(e) {
-	var params = e.data.split(':');
-	console.log(numberMessagesLocal + " " + params[1])
-	if ( params[1] > numberMessagesLocal){
-	    ws.send('GETBUFFER:');
-	}
+      var params = e.data.split(':');
+      console.log(numberMessagesLocal + " " + params[1])
+      if ( params[1] > numberMessagesLocal){
+        ws.send('GETBUFFER:');
+      }
     }
 
-    // determine websocket URI
-    var port = "8080"
-    var wsuri;
-    if (window.location.protocol === "file:") {
-       wsuri = "ws://localhost:"+port;
-       // wsuri = "ws://localhost:"+port+"/ws";
-    } else {
-       wsuri = "ws://"+window.location.hostname+":"+port;
-       // wsuri = "ws://"+window.location.hostname+":"+port+"/ws";
-    }
+    var wsuri = window.location.href.replace("http", "ws");
+    console.log("wsuri: "+wsuri)
 
     // open websocket
     var ws = null;
@@ -507,23 +499,23 @@ function init(container, width, height) {
             'PAINTBUFFER': paintbuffer,
             'USERS': users,
             'ERROR': servererror,
-	    'BUFFERSIZE': buffersize
+        'BUFFERSIZE': buffersize
         }
 
-	var timer = setInterval(requestBufferSize, 1000);
-	var lastReceived = new Date().getTime();
+    var timer = setInterval(requestBufferSize, 1000);
+    var lastReceived = new Date().getTime();
 
-	function requestBufferSize() {	    
-	    if ( new Date().getTime() - lastReceived > 100) {
-		ws.send('GETBUFFERSIZE:');
-	    }
-	}
-	
+    function requestBufferSize() {
+        if ( new Date().getTime() - lastReceived > 100) {
+        ws.send('GETBUFFERSIZE:');
+        }
+    }
+
         ws.onmessage = function(e) {
-            lastReceived = new Date().getTime(); 
-	    // alertify.log("server: "+e.data);
+            lastReceived = new Date().getTime();
+        // alertify.log("server: "+e.data);
             // noty({text: '[noty] '+e.data});
-	    var params = e.data.split(':');
+        var params = e.data.split(':');
             var header = params[0];
             console.log("header:"+header)
             console.log("message:"+e.data)

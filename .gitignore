@@ -1,3 +1,7 @@
 # sbt
 target/
 akka/benchmarks/results/
+
+# private scripts
+launchcontainer.sh
+getstatus.sh
