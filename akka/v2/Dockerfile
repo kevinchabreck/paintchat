@@ -20,8 +20,8 @@ COPY build.sbt build.sbt
 RUN sbt compile
 
 # build project once without config file
-COPY src/main/scala/ src/main/scala/
 COPY src/main/resources/www/ src/main/resources/www/
+COPY src/main/scala/ src/main/scala/
 RUN sbt compile
 
 # rebuild with config

@@ -10,7 +10,8 @@ assemblyJarName in assembly := "paintchat-v2.jar"
 scalacOptions ++= Seq(
   "-deprecation",
   "-language:postfixOps",
-  "-target:jvm-1.8"
+  "-target:jvm-1.8",
+  "-optimize"
 )
 
 val akkaVersion = "2.4.0"

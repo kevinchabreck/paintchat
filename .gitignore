@@ -1,7 +1,9 @@
 # sbt
 target/
-akka/benchmarks/results/
 
 # private scripts
 launchcontainer.sh
 getstatus.sh
+
+# testing data
+akka/benchmarks/results/

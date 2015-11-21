@@ -40,20 +40,21 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
       path("status") {
         complete(statusJSON.toString)
       } ~
+      path("paintbuffer") {
+        complete(pbufferJSON.toString)
+      } ~
       getFromResourceDirectory("www")
     }
   }
 
   def businessLogic: Receive = {
     case UpgradedToWebSocket => parent ! UpgradedToWebSocket
-    case x:FrameCommandFailed => //println(s"frame command failed: $x")
+    case x:FrameCommandFailed => println(s"frame command failed: $x")
     case x:ConnectionClosed => context.stop(self)
     case frame:TextFrame => handleTextFrame(frame)
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
-    case UserJoin(username, client) =>
-      if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
-    case UserLeft(username) =>
-      send(TextFrame(s"INFO:$username has left"))
+    case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"INFO:$username has joined"))}
+    case UserLeft(username) => send(TextFrame(s"INFO:$username has left"))
     // case UserJoin(username, client) => if (client!=self) {send(TextFrame(s"USERJOIN:$username"))}
     // case UserLeft(username) => send(TextFrame(s"USERLEFT:$username"))
     case PaintBuffer(pbuffer) => send(TextFrame(s"PAINTBUFFER:${Json.toJson(pbuffer)}"))
@@ -113,5 +114,12 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
         "members" -> clusterstatus.members
       )
     )
+  }
+
+  def pbufferJSON: JsValue = {
+    implicit val timeout = Timeout(1 seconds)
+    val fs = ask(parent, GetBuffer)
+    val PaintBuffer(pbuffer) = Await.result(fs, timeout.duration)
+    return Json.toJson(pbuffer)
   }
 }

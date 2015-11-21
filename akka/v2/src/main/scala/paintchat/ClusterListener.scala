@@ -3,7 +3,6 @@ package paintchat
 import akka.actor.{Actor, ActorLogging}
 import akka.cluster.{Cluster, ClusterEvent, Member}
 import akka.cluster.ClusterEvent.{InitialStateAsEvents, MemberUp, MemberExited, MemberRemoved, UnreachableMember, ReachableMember, MemberEvent}
-// import collection.mutable.{ListBuffer}
 
 sealed trait NewNodeUpdate
 case object GetUpdated extends NewNodeUpdate
@@ -48,7 +47,6 @@ class ClusterListener extends Actor with ActorLogging {
       // request buffer from leader's ServerWorker, and set initialized=true
       // send UpdateBuffer to local ServerWorker
       context.system.actorSelection(cluster.state.leader.get + "/user/paintchat-server") ! GetUpdated
-
       initialized = true
     }
   }

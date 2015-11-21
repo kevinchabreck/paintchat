@@ -322,11 +322,9 @@ function init(container, width, height) {
     ctx.clear();
   }
 
-  // var usercount = 0;
   function accepted(e) {
-    // document.getElementById("Usersbadge").innerHTML = usercount;
     var username = e.data.replace('ACCEPTED:','');
-    createUserIcon(username); 
+    createUserIcon(username);
     noty({
       text: 'connected to server as "'+username+'"',
       layout: 'top',
@@ -377,18 +375,14 @@ function init(container, width, height) {
     document.getElementById("Usersbadge").innerHTML = usercount;
   }
 
-
   function userlist(e) {
     var users = e.data.split(':')[1].split(" ");
     if (users != ''){
       for(var i in users){
           createUserIcon(users[i]);
       }
-    }  
-    
+    }
   }
-
-
 
   function users(e) {
     // var params = e.data.split(':');
@@ -401,8 +395,6 @@ function init(container, width, height) {
     // }
     // userlistSpace.innerHTML = ul;
   }
-
-
 
   function servererror(e) {
     noty({
@@ -440,14 +432,14 @@ function init(container, width, height) {
   // open websocket
   var ws = null;
   if ("WebSocket" in window) {
-     ws = new WebSocket(wsuri);
+    ws = new WebSocket(wsuri);
   } else if ("MozWebSocket" in window) {
-     ws = new MozWebSocket(wsuri);
+    ws = new MozWebSocket(wsuri);
   } else {
-     servererror({message:"Browser does not support WebSocket!"});
+    servererror({message:"Browser does not support WebSocket!"});
   }
 
-  if(ws){
+  if(ws) {
     ws.onopen = function() {
       ws.send('GETBUFFER:');
       ws.send('GETUSERLIST:');
@@ -481,22 +473,19 @@ function init(container, width, height) {
   ctx.clear();
 }
 
-function deleteUserIcon(username){
-
+function deleteUserIcon(username) {
   $("#"+username).remove();
 }
 
-function createUserIcon(username){
-
-    $("#usersgroup").append($("<canvas/>")
-            .attr({id: username, width: 35, height: 35})
-            .tooltip({title: username, placement: "top"})
-            .jdenticon(md5(username))
-            );
-
+function createUserIcon(username) {
+  $("#usersgroup").append($("<canvas/>")
+    .attr({id: username, width: 35, height: 35})
+    .tooltip({title: username, placement: "top"})
+    .jdenticon(md5(username))
+  );
 }
 
-window.onload = function(){
+window.onload = function() {
   var container = document.getElementById('canvasSpace');
   init(container, 700, 394); // 16 x 9 canvas
 }

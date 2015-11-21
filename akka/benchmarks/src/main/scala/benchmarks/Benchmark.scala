@@ -1,4 +1,4 @@
-package benchmarks
+package benchmark
 
 import akka.actor.{Actor, ActorSystem, ActorRef, Props}
 import scala.sys.exit
@@ -15,7 +15,7 @@ import java.util.Random
 
 case class ReceivedMessage(message : String, timeStamp : Long)
 
-object Benchmarks extends App {
+object Benchmark extends App {
   implicit val system = ActorSystem("tester-system")
 
   val configuration = ConfigFactory.load("application.conf")
@@ -92,7 +92,7 @@ object Benchmarks extends App {
 
     (1 to numberClients).foreach({ cnt =>
 
-      var connection : String = connectionSitePort      
+      var connection : String = connectionSitePort
       if (distributedTest == true){
         val cntMod3 = (cnt % 3)
         connection = distributedClients(cntMod3)
@@ -142,10 +142,8 @@ object Benchmarks extends App {
       }
 
       // calc grand max and min
-      if (max > grandMax)
-        grandMax = max
-      if (min < grandMin)
-        grandMin = min
+      if (max > grandMax) grandMax = max
+      if (min < grandMin) grandMin = min
 
       // calc total packets lost
       grandPacketsDropped += (numberTestPackets - packetsReceived)
@@ -196,7 +194,8 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
         packetNum += 1
       }
 
-    case "close" => super.close()
+    case "close" =>
+      super.close()
 
     case ReceivedMessage(message, timeReceived) =>
       val splitCol : Seq[String] = message.split(":", 2)
@@ -204,12 +203,12 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
         val senderNum : Seq[String] = splitCol(1).split(" ", 7)
         if (senderNum(0).compareTo((id * pixelSpacingX).toString()) == 0){
           // senderNum(1) is the packetNum and senderNum(6) is the timestamp
-          Benchmarks.delayArray(id - 1)((senderNum(1).toInt / pixelSpacingY) - 1) = timeReceived - senderNum(6).toLong
+          Benchmark.delayArray(id - 1)((senderNum(1).toInt / pixelSpacingY) - 1) = timeReceived - senderNum(6).toLong
         }
       }
-      Benchmarks.lastReceived = timeReceived
+      Benchmark.lastReceived = timeReceived
 
-    case x => println("I have no idea how to handle what you just what you just sent me. " + x)
+    case x => println("I have no idea how to handle what you just sent me. " + x)
   }
 
   override def onMessage(message: String): Unit = {
@@ -219,8 +218,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
   }
   override def onClose(code: Int, reason: String, remote: Boolean): Unit = {
     println("This " + id + " is being closed!")
-    Benchmarks.clientMap -= id
-
+    Benchmark.clientMap -= id
   }
   override def onOpen(handshakedata: ServerHandshake): Unit = { }
   override def onError(ex: Exception): Unit = println("Ahh, I am client " + id + " and I am in error! " + ex)
