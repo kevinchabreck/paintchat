@@ -49,7 +49,7 @@ class ClientWorker(val serverConnection:ActorRef, val parent:ActorRef, val media
 
   def businessLogic: Receive = {
     case UpgradedToWebSocket => parent ! UpgradedToWebSocket
-    case x:FrameCommandFailed => println(s"frame command failed: $x")
+    case x:FrameCommandFailed => //println(s"frame command failed: $x")
     case x:ConnectionClosed => context.stop(self)
     case frame:TextFrame => handleTextFrame(frame)
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
