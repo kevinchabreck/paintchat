@@ -1,11 +1,23 @@
 package benchmark
 
+import javax.inject.Inject
+import play.api.mvc._
+import play.api.libs.ws._
+import play.api.libs.ws.ning._
+
+
 import akka.actor.{Actor, ActorSystem, ActorRef, Props}
+import akka.util.Timeout
+
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.language.postfixOps
 import scala.sys.exit
 import scala.io.StdIn.readLine
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.Future
 import scala.collection.immutable.StringOps
+import collection.mutable.{ListBuffer}
 import com.typesafe.config.ConfigFactory
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.drafts.{Draft_17}
@@ -63,6 +75,8 @@ object Benchmark extends App {
   println(s"Request per second is ${requestPerSec}")
 
   println(s"ClientsConnectEnd:${clientMap.size}/$numberClients\n")
+
+  checkBuffer()
 
   readLine()
 
@@ -167,7 +181,53 @@ object Benchmark extends App {
 
   }
 
+  def checkBuffer() {
+
+
+  println(s"Consistency Checking Start: ")
+  val urlList : Seq[String] = distributedClientsRaw.split(",").map({ url=>
+      url.replaceAll("ws","http")
+    })
+
+  var responsebody = new ListBuffer[String]
+
+  (1 to 3).foreach({ iter =>
+
+    val client = NingWSClient()
+    implicit val timeout = Timeout(1 seconds)
+    val future = client.url(urlList(iter-1)+"/paintbuffer").get()
+    val response = Await.result(future, timeout.duration)
+    responsebody += response.body
+
+    client.close()
+    
+  })
+
+  var consistency = true
+
+  if ((responsebody(0) == responsebody(1)) && (responsebody(1) == responsebody(2))){
+    consistency = true
+  }else{
+    consistency = false 
+  }
+
+  // (1 to 3).foreach({ iter =>
+  //   println(responsebody(iter-1))
+  // })
+
+  if(consistency){
+    println(s"Data is consistent")
+  }else{
+    println(s"Data is inconsistent")
+  }
+  
+
+ 
+  }
+
 }
+
+
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
   var packetNum : Int = 1
