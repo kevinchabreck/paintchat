@@ -21,5 +21,5 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
   "io.spray" %% "spray-can" % "1.3.3",
   "com.wandoulabs.akka" %% "spray-websocket" % "0.1.4",
-  "com.typesafe.play" %% "play-json" % "2.4.3"
+  "com.typesafe.play" %% "play-json" % "2.4.4"
 )
