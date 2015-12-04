@@ -37,7 +37,8 @@ object Benchmark extends App {
   val numDistributedClients = configuration.getInt("app.numDistributedClients")
   val distributedTest = configuration.getBoolean("app.distributedTest")
   val distributedClientsRaw = configuration.getString("app.distributedClients")
-  val distributedClients : Seq[String] = distributedClientsRaw.split(",", 3)
+  val distributedClients : Seq[String] = distributedClientsRaw.split(",", numDistributedClients)
+  val verboseOutput = configuration.getBoolean("app.verboseOutput")
 
   // map of all clients that this app controls
   val clientMap = collection.mutable.Map[Int, ActorRef]()
@@ -76,7 +77,8 @@ object Benchmark extends App {
 
   println(s"ClientsConnectEnd:${clientMap.size}/$numberClients\n")
 
-  checkBuffer()
+  if (distributedTest)
+    checkBuffer()
 
   readLine()
 
@@ -133,11 +135,16 @@ object Benchmark extends App {
     var grandMin = Double.MaxValue
     var grandPacketsDropped = 0
     (1 to numberClients).foreach({ clientNum =>
+      val clientName : String = "c" + clientNum
       var total = 0.0
       var packetsReceived = 0
       var max = 0.0
       var min = Double.MaxValue
-      delayArray(clientNum - 1).foreach({ cnt =>
+      (1 to numberTestPackets).foreach({ packetCnt => //delayArray(clientNum - 1).foreach({ cnt =>
+        val cnt = delayArray(clientNum - 1)(packetCnt - 1)
+        if (verboseOutput){
+          println(s"$clientName.p${packetCnt - 1}:$cnt")
+        }
         if ( cnt > 1e-3 ){
           if (cnt > max)
             max = cnt
@@ -163,13 +170,12 @@ object Benchmark extends App {
       grandPacketsDropped += (numberTestPackets - packetsReceived)
 
       // print initial results
-      val clientName : String = "c" + clientNum
-      println(s"\n$clientName.avgDelay:${total/packetsReceived}")
+      println(s"$clientName.avgDelay:${total/packetsReceived}")
       println(s"$clientName.totDelay:${total}")
       println(s"$clientName.minDelay:${min}")
       println(s"$clientName.maxDelay:${max}")
       println(s"$clientName.sent:${numberTestPackets}")
-      println(s"$clientName.rec:${packetsReceived}")
+      println(s"$clientName.rec:${packetsReceived}\n")
     })
 
     val clientName : String = "sum"
@@ -183,51 +189,40 @@ object Benchmark extends App {
 
   def checkBuffer() {
 
-
-  println(s"Consistency Checking Start: ")
-  val urlList : Seq[String] = distributedClientsRaw.split(",").map({ url=>
+    println(s"Consistency Checking Start: ")
+    val urlList : Seq[String] = distributedClientsRaw.split(",").map({ url=>
       url.replaceAll("ws","http")
     })
 
-  var responsebody = new ListBuffer[String]
+    var responsebody = new ListBuffer[String]
 
-  (1 to 3).foreach({ iter =>
+    (1 to numDistributedClients).foreach({ iter =>
 
-    val client = NingWSClient()
-    implicit val timeout = Timeout(1 seconds)
-    val future = client.url(urlList(iter-1)+"/paintbuffer").get()
-    val response = Await.result(future, timeout.duration)
-    responsebody += response.body
+      val client = NingWSClient()
+      implicit val timeout = Timeout(1 seconds)
+      val future = client.url(urlList(iter-1)+"/paintbuffer").get()
+      val response = Await.result(future, timeout.duration)
+      responsebody += response.body
 
-    client.close()
+      client.close()
     
-  })
+    })
 
-  var consistency = true
+    var consistency = true
 
-  if ((responsebody(0) == responsebody(1)) && (responsebody(1) == responsebody(2))){
-    consistency = true
-  }else{
-    consistency = false 
+    (1 to (numDistributedClients - 1)).foreach({ cnt =>
+      if (responsebody(0) != responsebody(cnt)){
+        consistency = false
+      }
+    })
+
+    if(consistency){
+      println(s"Data is consistent")
+    }else{
+      println(s"Data is inconsistent")
+    }
   }
-
-  // (1 to 3).foreach({ iter =>
-  //   println(responsebody(iter-1))
-  // })
-
-  if(consistency){
-    println(s"Data is consistent")
-  }else{
-    println(s"Data is inconsistent")
-  }
-  
-
- 
-  }
-
 }
-
-
 
 class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPackets: Int) extends WebSocketClient(new URI(connectionSitePort), new Draft_17) with Actor {
   var packetNum : Int = 1
