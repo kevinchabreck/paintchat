@@ -14,6 +14,8 @@ scalacOptions ++= Seq(
   "-target:jvm-1.8"
 )
 
+resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
+
 val akkaVersion = "2.4.1"
 
 libraryDependencies ++= Seq(
