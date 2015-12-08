@@ -1,3 +1,5 @@
+[![](https://badge.imagelayers.io/kevinchabreck/paintchat:latest.svg)](https://imagelayers.io/?images=kevinchabreck/paintchat:latest 'Get your own badge on imagelayers.io')
+
 # PaintChat
 A chatroom with support for real-time collaborative drawing. Think MS Paint meets Google Docs!
 
