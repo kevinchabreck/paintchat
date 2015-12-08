@@ -27,7 +27,7 @@ With SBT:
 With Docker:
 
 	$ docker build -t paintchat .
-	$ docker run -d --net=host -e CASSANDRA_IP=$CASSANDRA_IP paintchat
+	$ docker run -it --net=host -e CASSANDRA_IP=$CASSANDRA_IP paintchat
 
 Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default number of max retry attempts is 3.
 
