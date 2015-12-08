@@ -5,7 +5,6 @@ MAINTAINER Kevin Chabreck
 
 # get required sbt version
 COPY project/build.properties project/build.properties
-# COPY project/assembly.sbt project/assembly.sbt
 RUN sbt update
 
 # build compiler-interface for scala 11.7
