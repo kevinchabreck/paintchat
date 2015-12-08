@@ -1,5 +1,0 @@
-# ignore existing compiled files/dependencies
-project/project/
-project/target/
-target/
-
