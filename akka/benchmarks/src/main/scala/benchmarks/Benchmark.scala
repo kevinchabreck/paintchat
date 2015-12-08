@@ -28,6 +28,7 @@ import java.util.Random
 case class ReceivedMessage(message : String, timeStamp : Long)
 
 object Benchmark extends App {
+
   implicit val system = ActorSystem("tester-system")
 
   val configuration = ConfigFactory.load("application.conf")
@@ -57,6 +58,7 @@ object Benchmark extends App {
   waitOneSec()
 
   println(s"ClientsConnectFail:${numberClients - clientMap.size}\n")
+  readLine()
 
   val startTime = System.currentTimeMillis
 
@@ -76,7 +78,7 @@ object Benchmark extends App {
 
   println(s"ClientsConnectEnd:${clientMap.size}/$numberClients\n")
 
-  checkBuffer()
+  //checkBuffer()
 
   readLine()
 
@@ -182,47 +184,39 @@ object Benchmark extends App {
   }
 
   def checkBuffer() {
-
-
-  println(s"Consistency Checking Start: ")
-  val urlList : Seq[String] = distributedClientsRaw.split(",").map({ url=>
+    println(s"Consistency Checking Start: ")
+    val urlList : Seq[String] = distributedClientsRaw.split(",").map({ url=>
       url.replaceAll("ws","http")
     })
 
-  var responsebody = new ListBuffer[String]
+    var responsebody = new ListBuffer[String]
 
-  (1 to 3).foreach({ iter =>
+    (1 to 3).foreach({ iter =>
+      val client = NingWSClient()
+      implicit val timeout = Timeout(1 seconds)
+      val future = client.url(urlList(iter-1)+"/paintbuffer").get()
+      val response = Await.result(future, timeout.duration)
+      responsebody += response.body
+      client.close()
+    })
 
-    val client = NingWSClient()
-    implicit val timeout = Timeout(1 seconds)
-    val future = client.url(urlList(iter-1)+"/paintbuffer").get()
-    val response = Await.result(future, timeout.duration)
-    responsebody += response.body
+    var consistency = true
 
-    client.close()
-    
-  })
+    if ((responsebody(0) == responsebody(1)) && (responsebody(1) == responsebody(2))){
+      consistency = true
+    } else{
+      consistency = false
+    }
 
-  var consistency = true
+    // (1 to 3).foreach({ iter =>
+    //   println(responsebody(iter-1))
+    // })
 
-  if ((responsebody(0) == responsebody(1)) && (responsebody(1) == responsebody(2))){
-    consistency = true
-  }else{
-    consistency = false 
-  }
-
-  // (1 to 3).foreach({ iter =>
-  //   println(responsebody(iter-1))
-  // })
-
-  if(consistency){
-    println(s"Data is consistent")
-  }else{
-    println(s"Data is inconsistent")
-  }
-  
-
- 
+    if(consistency) {
+      println(s"Data is consistent")
+    } else{
+      println(s"Data is inconsistent")
+    }
   }
 
 }
@@ -243,7 +237,7 @@ class TestClient(id: Int, delay: Long, connectionSitePort: String, numberTestPac
     case "connectBlocking" => super.connectBlocking()
 
     case "start" =>
-      super.send("GETBUFFER:")
+      // super.send("GETBUFFER:")
       super.send("USERNAME:" + id)
       super.send("RESET:")
 

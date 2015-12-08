@@ -1,14 +1,11 @@
 
-name := "PaintChat v2 (Spray, clustered)"
+name := "PaintChat"
 
 version := "2.0"
 
 scalaVersion := "2.11.7"
 
-assemblyJarName in assembly := "paintchat-v2.jar"
-
 scalacOptions ++= Seq(
-  "-optimize",
   "-deprecation",
   "-language:postfixOps",
   "-target:jvm-1.8"

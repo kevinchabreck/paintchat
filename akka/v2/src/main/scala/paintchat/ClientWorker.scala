@@ -4,7 +4,7 @@ import akka.actor.{ActorLogging, ActorRef, Address, Props}
 import akka.io.Tcp.ConnectionClosed
 import akka.util.Timeout
 import akka.pattern.ask
-import akka.cluster.{Cluster, Member}
+import akka.cluster.{Cluster, Member, ClusterEvent}
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
 import spray.can.server.UHttp
 import spray.can.websocket.{WebSocketServerWorker, UpgradedToWebSocket, FrameCommandFailed}
@@ -26,14 +26,19 @@ object ClientWorker {
   def props(serverConnection:ActorRef, bufferproxy:ActorRef, mediator:ActorRef) = Props(classOf[ClientWorker], serverConnection, bufferproxy, mediator)
 }
 class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val mediator:ActorRef)
-                  extends HttpServiceActor with WebSocketServerWorker with ActorLogging{
+                  extends HttpServiceActor with WebSocketServerWorker with ActorLogging {
+
   var name = "anonymous"
   override def receive = handshaking orElse businessLogicNoUpgrade orElse closeLogic
+
+  def clustersize = Cluster(context.system).state.members.size
 
   def businessLogicNoUpgrade: Receive = {
     runRoute {
       pathEndOrSingleSlash {
         getFromResource("www/index.html")
+      } ~ path("health") {
+        complete("{status: up}")
       } ~ path("status") {
         complete(statusJSON.toString)
       } ~ path("paintbuffer") {
@@ -43,9 +48,10 @@ class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val 
   }
 
   def businessLogic: Receive = {
-    case UpgradedToWebSocket => context.parent ! UpgradedToWebSocket
+    case UpgradedToWebSocket => handleNewConnection
     case x:ConnectionClosed => context.stop(self)
     case frame:TextFrame => handleTextFrame(frame)
+    case _:ClusterEvent.ClusterDomainEvent => send(TextFrame(s"CLUSTERSIZE:$clustersize"))
     case Paint(data) => send(TextFrame(s"PAINT:$data"))
     case Chat(username, message, client) => send(TextFrame("CHAT:"+(if (client!=self) username else "Me")+s":$message"))
     case Reset(username, client) => send(TextFrame(if (client!=self) s"RESET:$username" else "SRESET:"))
@@ -61,6 +67,11 @@ class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val 
     case x => log.warning(s"recieved unknown message: $x")
   }
 
+  def handleNewConnection() {
+    context.parent ! UpgradedToWebSocket
+    Cluster(context.system).subscribe(self, classOf[ClusterEvent.ClusterDomainEvent])
+  }
+
   def handleTextFrame(frame: TextFrame) = {
     frame.payload.utf8String.split(":",2).toList match {
       case "PAINT"::data::_ => mediator ! Publish("canvas_update", Paint(data))
@@ -69,6 +80,8 @@ class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val 
       case "USERNAME"::username::_ => context.parent ! UserName(username)
       case "GETBUFFER"::_ => context.parent ! GetBuffer
       case "GETUSERLIST"::_ => context.parent ! GetUserList
+      case "PING"::_ => send(TextFrame("PINGACK"))
+      case "GETCLUSTERSIZE"::_ => send(TextFrame(s"CLUSTERSIZE:$clustersize"))
       case _ => log.warning(s"unrecognized textframe: ${frame.payload.utf8String}")
     }
   }
@@ -78,13 +91,13 @@ class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val 
   }
 
   implicit val memberWrites = new Writes[Member] {
-    def writes(member: Member) = Json.obj(
+    def writes(member: Member) = Json.obj (
       member.address.host.get+":"+member.address.port.get -> member.status.toString
     )
   }
 
   def statusJSON: JsValue = {
-    implicit val timeout = Timeout(1 seconds)
+    implicit val timeout = Timeout(5 seconds)
     val fs = ask(context.parent, ServerStatus).mapTo[ServerState]
     val fb = ask(bufferproxy, BufferStatus).mapTo[BufferState]
     val ServerState(clients) = Await.result(fs, timeout.duration)

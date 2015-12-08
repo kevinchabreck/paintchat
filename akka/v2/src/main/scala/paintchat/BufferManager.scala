@@ -10,6 +10,7 @@ import collection.mutable
 case object BufferStatus
 case class  BufferState(address:Address, size:Int)
 case object BufferUpdated
+case object BufferReset
 case class  Evt(data:ClientUpdate)
 
 class BufferManager extends PersistentActor with ActorLogging {
@@ -18,11 +19,14 @@ class BufferManager extends PersistentActor with ActorLogging {
   val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("canvas_update", self)
 
-  def handleEvent(e:Evt) = { e match {
-      case Evt(Paint(data)) => pbuffer += data
-      case Evt(_:Reset) => pbuffer.clear()
+  def handleEvent(e:Evt) = e match {
+    case Evt(Paint(data)) =>
+      pbuffer += data
+      mediator ! Publish("buffer_update", BufferUpdated)
+    case Evt(_:Reset) => if (pbuffer.nonEmpty) {
+      pbuffer.clear()
+      mediator ! Publish("buffer_update", BufferReset)
     }
-    mediator ! Publish("buffer_update", BufferUpdated)
   }
 
   override def receiveRecover: Receive = {
@@ -30,8 +34,7 @@ class BufferManager extends PersistentActor with ActorLogging {
     case SnapshotOffer(_, PaintBuffer(snapshot)) =>
       pbuffer = snapshot
       mediator ! Publish("buffer_update", BufferUpdated)
-    case RecoveryCompleted => // do nothing
-    case x => log.warning(s"BufferManager: unknown message $x in receiveRecover")
+    case RecoveryCompleted => log.info(s"BufferManager: recovered state")
   }
 
   override def receiveCommand: Receive = {
@@ -39,7 +42,5 @@ class BufferManager extends PersistentActor with ActorLogging {
     case u:ClientUpdate => persistAsync(Evt(u))(handleEvent)
     case BufferStatus => sender ! BufferState(Cluster(context.system).selfAddress, pbuffer.size)
     case "snap"  => saveSnapshot(PaintBuffer(pbuffer))
-    case _:SubscribeAck => // do nothing
-    case x => log.warning(s"BufferManager: unknown message $x in receiveCommand")
   }
 }

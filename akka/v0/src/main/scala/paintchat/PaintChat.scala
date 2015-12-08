@@ -61,36 +61,37 @@ class Server extends Actor with ActorLogging {
 
     case ServerStatus => sender ! ServerInfo(clients.size)
 
-    case msg: TextFrame =>
-      val _ = msg.payload.utf8String.split(":",2).toList match {
+    // case msg: TextFrame =>
+    //   val _ = msg.payload.utf8String.split(":",2).toList match {
 
-        case "PAINT"::data::_ =>
-          paintbuffer += data
-          clients.keys.foreach(_.forward(ForwardFrame(msg)))
+    case msg: TextFrame => msg.payload.utf8String.split(":",2).toList match {
 
-        case "GETBUFFER"::_ =>
-          sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
+      case "PAINT"::data::_ =>
+        paintbuffer += data
+        clients.keys.foreach(_.forward(ForwardFrame(msg)))
 
-        case "USERNAME"::username::_ =>
-          clients(sender) = username
-          sender ! Push("ACCEPTED:"+username)
-          clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
+      case "GETBUFFER"::_ =>
+        sender ! Push("PAINTBUFFER:"+paintbuffer.toList.toJson)
 
-        case "RESET"::_ =>
-          sender ! Push("SRESET:")
-          clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
-          paintbuffer.clear()
+      case "USERNAME"::username::_ =>
+        clients(sender) = username
+        sender ! Push("ACCEPTED:"+username)
+        clients.keys.filter(_ != sender).foreach(_ ! Push("INFO:"+username+" has joined"))
 
-        case "CHAT"::message::_ =>
-          val m = "CHAT:"+clients(sender)+":"+message
-          clients.keys.filter(_ != sender).foreach(_ ! Push(m))
+      case "RESET"::_ =>
+        sender ! Push("SRESET:")
+        clients.keys.filter(_ != sender).foreach(_ ! Push("RESET:"+clients(sender)))
+        paintbuffer.clear()
 
-        case _ =>
-          println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
-      }
+      case "CHAT"::message::_ =>
+        val m = "CHAT:"+clients(sender)+":"+message
+        clients.keys.filter(_ != sender).foreach(_ ! Push(m))
 
-    case x =>
-      println("[SERVER] recieved unknown message: "+x)
+      case _ =>
+        println("[SERVER] recieved unrecognized textframe: "+msg.payload.utf8String)
+    }
+
+    case x => println("[SERVER] recieved unknown message: "+x)
   }
 
 }

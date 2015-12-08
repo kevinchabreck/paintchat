@@ -9,7 +9,7 @@ import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, Subscr
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import spray.can.Http
 import spray.can.websocket.UpgradedToWebSocket
-import collection.mutable.{HashMap, ListBuffer}
+import collection.mutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -17,34 +17,46 @@ case object ServerStatus
 case class  ServerState(connections: Int)
 
 sealed trait ServerUpdate
+case class PaintBuffer(buffer:mutable.ListBuffer[String]) extends ServerUpdate
 case class Accepted(username:String) extends ServerUpdate
 case class UserJoin(username:String, client:ActorRef) extends ServerUpdate
 case class UserLeft(username:String) extends ServerUpdate
-case class UserCount(usercount:Int) extends ServerUpdate
-case class PaintBuffer(pbuffer:ListBuffer[String]) extends ServerUpdate
 case class UserList(userlist:Iterable[String]) extends ServerUpdate
+case class UserCount(usercount:Int) extends ServerUpdate
 
 class ServerWorker extends Actor with ActorLogging {
-  val clients = new HashMap[ActorRef, String]
-  var pbuffer = new ListBuffer[String]
+  val clients = new mutable.HashMap[ActorRef, String]
+  var pbuffer = new mutable.ListBuffer[String]
+  val userlist = new mutable.ListBuffer[String]
   var buffervalid = false
-  val userlist = new ListBuffer[String]
+
   val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("client_update", self)
   mediator ! Subscribe("canvas_update", self)
   mediator ! Subscribe("buffer_update", self)
+
   var bufferproxy = context.actorOf(ClusterSingletonProxy.props(
     singletonManagerPath = "/user/buffer-manager",
     settings = ClusterSingletonProxySettings(context.system)),
-    name = "buffer-proxy")
+    name = "buffer-proxy"
+  )
+
+  def broadcast(m:Any) = clients.keys.foreach(_ ! m)
 
   def receive = {
-    case SubscribeAck(Subscribe(topic, None, `self`)) =>
     case UpgradedToWebSocket => clients(sender) = ""
     case ServerStatus => sender ! ServerState(clients.size)
-    case c:Chat => clients.keys.foreach(_ ! c)
+    case c:Chat => broadcast(c)
     case GetUserList => sender ! UserList(userlist)
     case BufferUpdated => buffervalid = false
+
+    case PaintBuffer(buffer) =>
+      pbuffer = buffer
+      buffervalid = true
+
+    case BufferReset =>
+      pbuffer.clear()
+      buffervalid = true
 
     case Http.Connected(remoteAddress, localAddress) =>
       val connection = context.watch(context.actorOf(ClientWorker.props(sender, bufferproxy, mediator)))
@@ -55,25 +67,19 @@ class ServerWorker extends Actor with ActorLogging {
       clients -= sender
 
     case GetBuffer =>
-      if (!buffervalid) {
-        try {
-          implicit val timeout = Timeout(5 seconds)
-          val f = ask(bufferproxy, GetBuffer).mapTo[PaintBuffer]
-          val PaintBuffer(buffer) = Await.result(f, timeout.duration)
-          pbuffer = buffer
-          buffervalid = true
-        } catch {
-          case scala.util.control.NonFatal(e) => log.error("read repair failed...")
-        }
+      if (buffervalid) {
+        sender ! PaintBuffer(pbuffer)
+      } else {
+        bufferproxy.forward(GetBuffer)
+        bufferproxy ! GetBuffer
       }
-      sender ! PaintBuffer(pbuffer)
 
     case Paint(data) =>
-      clients.keys.foreach(_ ! Paint(data))
+      broadcast(Paint(data))
       pbuffer += data
 
     case r:Reset =>
-      clients.keys.foreach(_ ! r)
+      broadcast(r)
       pbuffer.clear()
 
     case UserName(username) =>
@@ -83,14 +89,12 @@ class ServerWorker extends Actor with ActorLogging {
 
     case UserJoin(username,client) =>
       userlist += username
-      clients.keys.foreach(_ ! UserJoin(username,client))
-      clients.keys.foreach(_ ! UserCount(userlist.size))
+      broadcast(UserJoin(username,client))
+      broadcast(UserCount(userlist.size))
 
     case UserLeft(username) =>
       userlist -= username
-      clients.keys.foreach(_ ! UserLeft(username))
-      clients.keys.foreach(_ ! UserCount(userlist.size))
-
-    case x => log.warning(s"[SERVER] recieved unknown message from $sender: $x")
+      broadcast(UserLeft(username))
+      broadcast(UserCount(userlist.size))
   }
 }

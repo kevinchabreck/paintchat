@@ -106,7 +106,6 @@ function init(container, width, height) {
   }
 
   function move(e) {
-    // e.preventDefault();
     if(typeof e.originalEvent.touches != 'undefined'){
       e = e.originalEvent.touches[0];
     }
@@ -182,8 +181,12 @@ function init(container, width, height) {
     $('#chatInput').focus();
   }
 
-  function toggleUser(e){
-    $('#usersgroup').slideToggle("fast");
+  function toggleUsers(e){
+    $('#usersSpace').slideToggle("fast");
+  }
+
+  function toggleDashboard(e){
+    $('#dashboardSpace').slideToggle("fast");
   }
 
   function sendChat(e){
@@ -218,8 +221,9 @@ function init(container, width, height) {
   $('#sizePlus').on('click tap', incSize);
   $('#sizeMinus').on('click tap', decSize);
   $('#selectEraser').on('click tap', startErase);
-  $('#selectChat').on('click tap', toggleChat);
-  $('#selectUsers').on('click tap', toggleUser);
+  $('#toggleChat').on('click tap', toggleChat);
+  $('#toggleUsers').on('click tap', toggleUsers);
+  $('#toggleDashboard').on('click tap', toggleDashboard);
   $('#resetCanvas').on('click tap', sendReset);
 
   $(document).on('mousemove touchmove', move);
@@ -230,10 +234,10 @@ function init(container, width, height) {
   $("#colorPalette").on('change.spectrum', changeColor);
   $("#sendChatButton").on("click", sendChat);
 
-  $('.btn-group [title]').tooltip({
+  $('[data-toggle="tooltip"]').tooltip({
     container: 'body',
     delay: 5
-  });
+  })
 
   /**************************************************************************
   * WebSocket event handlers
@@ -370,9 +374,9 @@ function init(container, width, height) {
     }
   }
 
-  function usercoutupdate(e) {
+  function usercountupdate(e) {
     var usercount = e.data.split(':')[1];
-    document.getElementById("Usersbadge").innerHTML = usercount;
+    document.getElementById("usercount").innerHTML = usercount;
   }
 
   function userlist(e) {
@@ -384,16 +388,24 @@ function init(container, width, height) {
     }
   }
 
-  function users(e) {
-    // var params = e.data.split(':');
-    // var userlist = JSON.parse(params[1]);
-    // var userlistSpace = document.getElementById("userlistSpace");
-    // ul = '</br><b>USERS</b></br>';
-    // ul += '<i>'+userlist.length+' user(s) online</i><hr>';
-    // for(var i in userlist){
-    //     ul += userlist[i] + '</br>';
-    // }
-    // userlistSpace.innerHTML = ul;
+  var unacknowledgedPings = 0;
+  var pingtime = Date.now();
+
+  function ping() {
+    if (unacknowledgedPings < 5) {
+      ws.send('PING:');
+      pingtime = Date.now();
+      unacknowledgedPings++;
+    }
+  }
+
+  function pingack(e) {
+    $('#userping').html(Date.now() - pingtime);
+    unacknowledgedPings = 0;
+  }
+
+  function clustersize(e) {
+    $('#clustersize').html(e.data.split(':')[1]);
   }
 
   function servererror(e) {
@@ -420,9 +432,10 @@ function init(container, width, height) {
     'ACCEPTED': accepted,
     'DENIED': denied,
     'PAINTBUFFER': paintbuffer,
-    'USERS': users,
-    'USERCOUNT': usercoutupdate,
+    'USERCOUNT': usercountupdate,
     'USERLIST': userlist,
+    'PINGACK': pingack,
+    'CLUSTERSIZE': clustersize,
     'ERROR': servererror
   }
 
@@ -441,8 +454,12 @@ function init(container, width, height) {
 
   if(ws) {
     ws.onopen = function() {
+      // ping server every 2 seconds
+      window.setInterval(ping, 2000);
+      // set up canvas & user list
       ws.send('GETBUFFER:');
       ws.send('GETUSERLIST:');
+      ws.send('GETCLUSTERSIZE:');
       alertify.prompt("Enter your username", function (e, username) {
         if (e) {
           ws.send('USERNAME:' + username);
@@ -454,7 +471,7 @@ function init(container, width, height) {
 
     ws.onclose = function(e) {
       var msg = '';
-      if (e.code == 1006){
+      if (e.code == 1006) {
         msg = 'Could not reach WebSocket server at '+wsuri
       } else {
         msg = 'Server disconnected: '+e.code+' - reason: '+e.reason
@@ -478,7 +495,7 @@ function deleteUserIcon(username) {
 }
 
 function createUserIcon(username) {
-  $("#usersgroup").append($("<canvas/>")
+  $("#usersSpace").append($("<canvas/>")
     .attr({id: username, width: 35, height: 35})
     .tooltip({title: username, placement: "top"})
     .jdenticon(md5(username))

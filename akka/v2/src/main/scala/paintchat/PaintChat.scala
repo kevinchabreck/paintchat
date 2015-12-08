@@ -23,7 +23,11 @@ object PaintChat extends App with MySslConfiguration {
     try {
       ActorSystem("ClusterSystem", ConfigFactory.parseString("akka.remote.netty.tcp.port="+port).withFallback(ConfigFactory.load()))
     } catch {
-      case scala.util.control.NonFatal(_) => if (port==default_tcp_port) bindTCPPort(0) else ActorSystem("ClusterSystem")
+      case scala.util.control.NonFatal(_) =>
+        if (port==default_tcp_port)
+          bindTCPPort(0)
+        else
+          ActorSystem("ClusterSystem")
     }
   }
 
@@ -32,9 +36,13 @@ object PaintChat extends App with MySslConfiguration {
     val bind_future = ask(IO(UHttp), Http.Bind(server, default_interface, port))
     val bind_result = Await.result(bind_future, timeout.duration)
     bind_result match {
-      case Http.Bound(x) => scala.io.StdIn.readLine(Console.GREEN+s"server listening on http:/$x (press ENTER to exit)\n"+Console.RESET)
+      case Http.Bound(x) =>
+        scala.io.StdIn.readLine(Console.GREEN+s"server listening on http:/$x (press ENTER to exit)\n"+Console.RESET)
       case x: Http.CommandFailed =>
-        if (port < default_http_port+3) bindHTTPPort(server, port+1) else println(Console.RED+"Error: http bind failed"+Console.RESET)
+        if (port < default_http_port+3)
+          bindHTTPPort(server, port+1)
+        else
+          println(Console.RED+"Error: http bind failed"+Console.RESET)
     }
   }
 

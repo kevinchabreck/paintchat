@@ -16,6 +16,6 @@ class ClusterListener extends Actor with ActorLogging {
   override def postStop(): Unit = cluster.unsubscribe(self)
 
   def receive = {
-    case e:ClusterEvent.MemberEvent => log.info(s"MemberEvent: $e")
+    case e:ClusterEvent.MemberEvent => log.info(s"$e")
   }
 }

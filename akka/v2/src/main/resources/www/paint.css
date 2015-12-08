@@ -4,7 +4,6 @@ body {
 }
 
 .header,
-.marketing,
 .footer {
   padding-right: 15px;
   padding-left: 15px;
@@ -16,17 +15,15 @@ body {
 
 .footer {
   text-align: center;
-  margin-top: 10px;
-  padding-top: 19px;
+  vertical-align: middle;
+  padding-top: 10px;
   color: #777;
 }
 
-#toolSpace {
+#toolSpace,
+#dashboardSpace {
   padding-top: 10px;
-}
-
-#chatspace {
-
+  padding-bottom: 10px;
 }
 
 #canvasPanelBody {
@@ -43,22 +40,6 @@ body {
   margin-bottom: 15px;
 }
 
-#canvasSpace {
-
-}
-
-.canvas {
-
-}
-
-.badge-notify{
-  background:red !important;
-  position:relative;
-  top: -18px !important;
-  left: -20px;
-  font-size: 0.4em;
-}
-
 .toolbutton {
   padding-top: 0px;
   vertical-align: middle;
@@ -71,8 +52,17 @@ body {
   vertical-align: middle;
 }
 
-#pageContainer
-{
+.dashboardItem {
+  vertical-align: middle;
+  font-size: 2em;
+  margin-bottom: 0px;
+}
+
+.dashboardData {
+  margin: 0px;
+}
+
+#pageContainer {
   text-align: center;
   max-width: 700px;
   padding-left: 0px;
@@ -80,12 +70,11 @@ body {
 }
 
 .row-centered {
-    text-align:center;
+  text-align:center;
 }
 
 .col-centered {
-    display:inline-block;
-    float:none;
-    text-align:left;
-    margin-right:-4px;
+  display:inline-block;
+  float:none;
+  text-align:center;
 }

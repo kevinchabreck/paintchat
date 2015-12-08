@@ -7,7 +7,7 @@
     <meta name="description" content="collaborative doodling powered by WebSockets!">
     <meta name="author" content="Kevin Chabreck">
     <!-- <link rel="icon" href="favicon.ico"> -->
-    <title>draw.ws</title>
+    <title>PaintChat</title>
 
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
@@ -60,7 +60,7 @@
         <div class="col-lg-12">
 
           <div id="chatSpace" style="display:none" class="row">
-            <div class="col-lg-6 col-centered">
+            <div class="col-md-6 col-centered">
               <div class="input-group">
                 <input id="chatInput" type="text" class="form-control" placeholder="say something!">
                 <span class="input-group-btn">
@@ -70,7 +70,7 @@
             </div>
           </div>
 
-          <div id="usersgroup" style="display:none" class="row"></div>
+          <div id="usersSpace" style="display:none" class="row"></div>
 
           <div id="toolSpace" class="row row-centered">
             <div class="btn-group" role="group" aria-label="...">
@@ -90,14 +90,13 @@
                       data-toggle="tooltip" data-placement="top" title="Erase">
                 <span type='span' class="tool glyphicon glyphicon-erase"></span>
               </button>
-              <button id="selectChat" type="button" class="toolbutton btn btn-default"
+              <button id="toggleChat" type="button" class="toolbutton btn btn-default"
                       data-toggle="tooltip" data-placement="top" title="Chat">
                 <span type='span' class="tool glyphicon glyphicon-comment"></span>
               </button>
-              <button id="selectUsers" type="button" class="toolbutton btn btn-default"
-                      data-toggle="tooltip" data-placement="top" title="Users">
-                <span type='span' class="tool glyphicon glyphicon-user"></span>
-                <span id="Usersbadge" class="badge badge-notify"></span>
+              <button id="toggleDashboard" type="button" class="toolbutton btn btn-default"
+                      data-toggle="tooltip" data-placement="top" title="Dashboard">
+                <span type='span' class="tool glyphicon glyphicon-dashboard"></span>
               </button>
               <button id="resetCanvas" type="button" class="toolbutton btn btn-default"
                       data-toggle="tooltip" data-placement="top" title="Reset">
@@ -105,12 +104,38 @@
               </button>
             </div>
           </div>
+
+          <div id="dashboardSpace" style="display:none" class="row">
+            <div class="col-md-6 col-centered">
+              <div class="row">
+                <div class="col-md-4 col-sm-4">
+                  <div class="well dashboardItem" data-toggle="tooltip" data-placement="top" title="connected users">
+                    <span class="glyphicon glyphicon-user"></span>
+                    <h3 id="usercount" class="dashboardData">0000</h3>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-4">
+                  <div class="well dashboardItem" data-toggle="tooltip" data-placement="top" title="cluster size">
+                    <span class="glyphicon glyphicon-cloud"></span>
+                    <h3 id="clustersize" class="dashboardData">0000</h3>
+                  </div>
+                </div>
+                <div class="col-md-4 col-sm-4">
+                  <div class="well dashboardItem" data-toggle="tooltip" data-placement="top" title="server latency">
+                    <span class="glyphicon glyphicon-signal"></span>
+                    <h3 id="userping" class="dashboardData">0000</h3>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <footer class="footer">
+      <div class="footer row">
         <p>&copy; Kevin Chabreck 2015</p>
-      </footer>
+      </div>
     </div>
   </body>
 </html>
