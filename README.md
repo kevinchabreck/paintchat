@@ -19,10 +19,16 @@ Launch quick cassandra instance with [Docker](https://www.docker.com/):
 
 ### Run a local PaintChat instance
 
+With SBT:
+
 	$ sbt run
+
+With Docker:
+
+	$ docker run -d --net=host -e CASSANDRA_IP=$CASSANDRA_IP kevinchabreck/paintchat
 
 Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default max number of retry attempts is 3.
 
 ### Connect to local PaintChat instance
 
-Point your browser at [http://localhost:8080/](http://localhost:8080/)
+Point your browser at [http://localhost:8080/](http://localhost:8080/) (replace `localhost` with the ip of your Docker machine if you launched PaintChat in a container)
