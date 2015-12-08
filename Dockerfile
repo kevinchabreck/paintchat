@@ -27,3 +27,6 @@ RUN sbt compile
 # rebuild with config
 COPY src/main/resources/application.conf src/main/resources/application.conf
 RUN sbt compile
+
+# run PaintChat on entry
+CMD ["sbt", "run"]
