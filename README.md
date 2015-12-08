@@ -15,11 +15,11 @@ PaintChat requires a Cassandra instance to run. It will use the value of your __
 
 launch quick cassandra instance:
 
-	`$ docker pull cassandra && docker run -d -p 9042:9042 && export CASSANDRA_IP=$DOCKER_IP`
+	$ docker pull cassandra && docker run -d -p 9042:9042 && export CASSANDRA_IP=$DOCKER_IP
 
 ### Run a local PaintChat instance
 
-	`$ sbt run`
+	$ sbt run
 
 Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default max number of retry attempts is 3.
 
