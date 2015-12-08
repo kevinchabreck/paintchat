@@ -13,7 +13,7 @@ A chatroom with support for real-time collaborative drawing. Think MS Paint meet
 
 PaintChat requires a [Cassandra](http://cassandra.apache.org/) instance to run. It will use the value of your __CASSANDRA_IP__ env variable, or search locally at `127.0.0.1:9042` if __CASSANDRA_IP__ is unbound.
 
-(suggestion: launch a quick cassandra instance with [Docker](https://www.docker.com/)
+Launch a quick Cassandra instance with [Docker](https://www.docker.com/)
 
 	$ docker pull cassandra && docker run -d -p 9042:9042 && export CASSANDRA_IP=$DOCKER_IP
 
