@@ -23,6 +23,6 @@ launch quick cassandra instance:
 
 Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default max number of retry attempts is 3.
 
-### Connect to a local PaintChat instance
+### Connect to local PaintChat instance
 
 Point your browser at [http://localhost:8080/](http://localhost:8080/)
