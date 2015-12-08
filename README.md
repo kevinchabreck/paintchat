@@ -5,9 +5,9 @@ A chatroom with support for real-time collaborative drawing. Think MS Paint meet
 
 ## Features
 
--  Can run a single server or as a cluster
--  Consistent, persistant state
--  Dynamically add/remove nodes
+-  run a single server or as a cluster
+-  consistent, persistant state
+-  dynamically add/remove nodes at any time
 
 ## Usage
 
