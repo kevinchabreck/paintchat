@@ -3,10 +3,19 @@ body {
   padding-bottom: 10px;
 }
 
+a {
+  text-decoration: none !important;
+}
+
+h1 {
+  color: black;
+}
+
 .header,
 .footer {
   padding-right: 15px;
   padding-left: 15px;
+  padding-top: 10px;
 }
 
 .header {
@@ -16,7 +25,14 @@ body {
 .footer {
   text-align: center;
   vertical-align: middle;
-  padding-top: 10px;
+}
+
+.footerText {
+  color: #777;
+  font-size: 1.2em;
+}
+
+.fa {
   color: #777;
 }
 
