@@ -15,7 +15,7 @@ PaintChat requires a [Cassandra](http://cassandra.apache.org/) instance to run. 
 
 Launch a quick Cassandra instance with [Docker](https://www.docker.com/):
 
-	$ docker pull cassandra && docker run -d -p 9042:9042
+	$ docker pull cassandra:2.2.3 && docker run -d -p 9042:9042
 	$ export CASSANDRA_IP=[your docker machine's IP]
 
 ### Run a local PaintChat instance
