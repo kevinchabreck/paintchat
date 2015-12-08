@@ -33,4 +33,4 @@ Multiple instances of PaintChat can be run in parallel on the same host. They wi
 
 ### Connect to local PaintChat instance
 
-Point your browser at [http://localhost:8080/](http://localhost:8080/) (replace `localhost` with the ip of your Docker machine if you launched PaintChat in a container)
+Point your browser to [http://localhost:8080/](http://localhost:8080/) (replace `localhost` with the ip of your Docker machine if you launched PaintChat in a container)
