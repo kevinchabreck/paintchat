@@ -1,7 +1,7 @@
 FROM 1science/sbt:0.13.8-oracle-jre-8
 MAINTAINER Kevin Chabreck
 
-# PaintChat image based on Oracle Java 8 and SBT
+# PaintChat image based on Oracle Java 8 and SBT 0.13.9
 
 # get required sbt version
 COPY project/build.properties project/build.properties

@@ -13,11 +13,11 @@ A chatroom with support for real-time collaborative drawing. Think MS Paint meet
 
 ## Usage
 
-PaintChat requires a [Cassandra](http://cassandra.apache.org/) instance to run. Launch a quick instance with [Docker](https://www.docker.com/) using the [official Cassandra image](https://hub.docker.com/_/cassandra/):
+PaintChat requires a [Cassandra](http://cassandra.apache.org/) server instance to run. Launch a quick instance with [Docker](https://www.docker.com/) using the [official Cassandra image](https://hub.docker.com/_/cassandra/):
 
 	$ docker run -d -p 9042:9042 cassandra:2.2.3
 
-Export the IP of your cassandra container to __CASSANDRA_IP__ (PaintChat will use `127.0.0.1:9042` by default if unbound)
+Export the IP of your cassandra instance to __CASSANDRA_IP__ (PaintChat will use `127.0.0.1:9042` by default if unbound)
 
 	$ export CASSANDRA_IP=[your Docker machine's IP]
 
@@ -35,4 +35,4 @@ Multiple instances of PaintChat can be run in parallel on the same host. They wi
 
 ### Connect to local PaintChat instance
 
-Point your browser to [http://DOCKERIP:8080/](http://DOCKERIP:8080/) (replace `DOCKERIP` with the ip of your Docker machine)
+Point your browser to [http://DOCKERHOST:8080/](http://DOCKERHOST:8080/) (replace `DOCKERHOST` with the ip or hostname of your Docker machine)
