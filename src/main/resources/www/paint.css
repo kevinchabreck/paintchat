@@ -22,6 +22,10 @@ h1 {
   padding-bottom: 10px;
 }
 
+.headerText {
+  color: #333;
+}
+
 .footer {
   text-align: center;
   vertical-align: middle;
@@ -32,8 +36,8 @@ h1 {
   font-size: 1.2em;
 }
 
-.fa {
-  color: #777;
+.fa-github {
+  font-size: 1.5em;
 }
 
 #toolSpace,
