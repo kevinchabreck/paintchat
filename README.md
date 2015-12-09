@@ -18,15 +18,18 @@ PaintChat requires a [Cassandra](http://cassandra.apache.org/) server instance t
 
 	$ docker run -d -p 9042:9042 cassandra:2.2.3
 
+
 Export the IP of your cassandra instance to __CASSANDRA_IP__ (PaintChat will use `127.0.0.1:9042` by default if unbound)
 
 	$ export CASSANDRA_IP=[your Docker machine's IP]
+
 
 ### Run a local PaintChat instance
 
 With Docker:
 
 	$ docker run -it --net=host -e CASSANDRA_IP=$CASSANDRA_IP kevinchabreck/paintchat
+
 
 With SBT:
 
