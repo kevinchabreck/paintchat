@@ -8,7 +8,7 @@ A distributed chatroom with support for real-time collaborative drawing. Think M
 
 ## Features
 
--  run server as a single instance or as multiple clustered nodes
+-  run as a single instance or as multiple clustered nodes
 -  consistent, persistant state
 -  dynamically add/remove nodes at any time
 
@@ -36,4 +36,4 @@ Multiple instances of PaintChat can be run in parallel on the same host. They wi
 
 ### Connect to local PaintChat instance
 
-Point your browser to [http://DOCKERHOST:8080/](http://DOCKERHOST:8080/) (replace `DOCKERHOST` with the ip or hostname of your Docker machine)
+Point your browser to [http://DOCKERHOST:8080/](http://DOCKERHOST:8080/) (replace __DOCKERHOST__ with the ip or hostname of your Docker machine)
