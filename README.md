@@ -8,7 +8,7 @@ A chatroom with support for real-time collaborative drawing. Think MS Paint meet
 
 ## Features
 
--  run a single server or as a cluster
+-  run server as a single instance or as multiple clustered nodes
 -  consistent, persistant state
 -  dynamically add/remove nodes at any time
 
@@ -24,11 +24,11 @@ Export the ip of your cassandra instance to __CASSANDRA_IP__ (PaintChat will use
 
 ### Run a local PaintChat instance
 
-With Docker:
+With [Docker](https://docs.docker.com/mac/started/) (preferred method):
 
 	$ docker run -it --net=host -e CASSANDRA_IP=$CASSANDRA_IP kevinchabreck/paintchat
 
-With SBT:
+With [SBT](http://www.scala-sbt.org/):
 
 	$ sbt run
 
