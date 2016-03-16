@@ -34,6 +34,6 @@ With [SBT](http://www.scala-sbt.org/):
 
 Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default number of max retry attempts is 3.
 
-### Connect to local PaintChat instance
+### Connect to a local PaintChat instance
 
 Point your browser to [http://DOCKERHOST:8080/](http://DOCKERHOST:8080/) (replace __DOCKERHOST__ with the ip or hostname of your Docker machine)
