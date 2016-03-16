@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/kevinchabreck/paintchat.svg?branch=master)](https://travis-ci.org/kevinchabreck/paintchat)
 [![](https://badge.imagelayers.io/kevinchabreck/paintchat:latest.svg)](https://imagelayers.io/?images=kevinchabreck/paintchat:latest 'Get your own badge on imagelayers.io')
+[![ImageLayers Size](https://img.shields.io/imagelayers/image-size/kevinchabreck/paintchat/latest.svg)]()
 [![Join the chat at https://gitter.im/kevinchabreck/paintchat](https://badges.gitter.im/kevinchabreck/paintchat.svg)](https://gitter.im/kevinchabreck/paintchat?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 A chatroom with support for real-time collaborative drawing. Think MS Paint meets Google Docs!
