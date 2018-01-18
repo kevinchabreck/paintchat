@@ -12,28 +12,34 @@ A distributed chatroom with support for real-time collaborative drawing. Think M
 -  consistent, persistant state
 -  dynamically add/remove nodes at any time
 
-## Usage
+![paintchat screenshot](paintchat.png)
 
-PaintChat requires a [Cassandra](http://cassandra.apache.org/) server instance to run. Launch a quick instance with [Docker](https://www.docker.com/) using the [official Cassandra image](https://hub.docker.com/_/cassandra/):
+## Getting started
 
-	$ docker run -d -p 9042:9042 cassandra
-
-Export the ip of your cassandra instance to __CASSANDRA_IP__ (PaintChat will use `127.0.0.1:9042` by default if unbound)
-
-	$ export CASSANDRA_IP=[your Docker machine's ip]
+Download and install **[Docker for Mac or Windows](https://www.docker.com/products/overview)**.
 
 ### Run a local PaintChat instance
 
-With [Docker](https://docs.docker.com/mac/started/) (preferred method):
+Run in this directory:
 
-	$ docker run -it --net=host -e CASSANDRA_IP=$CASSANDRA_IP kevinchabreck/paintchat
+	$ docker-compose up
 
-With [SBT](http://www.scala-sbt.org/):
+This will create 4 containers on your machine:
+* __paintchat__: the master paintchat server node
+* __paintchat-replicant__: a replicant paintchat server node
+* __nginx__: an nginx load balancer
+* __cassandra__: a cassandra db instance for data persistence
 
-	$ sbt run
+The `paintchat` and `paintchat-replicant` containers are clustered together.
 
-Multiple instances of PaintChat can be run in parallel on the same host. They will attempt to bind to port 8080, and retry at monotonically increasing port numbers upon failure. The default number of max retry attempts is 3.
+<!-- You can add more replicant nodes to the cluster using the `docker-compose scale` command:
 
-### Connect to a local PaintChat instance
+  $ docker-compose scale paintchat-replicant=2
 
-Point your browser to [http://DOCKERHOST:8080/](http://DOCKERHOST:8080/) (replace __DOCKERHOST__ with the ip or hostname of your Docker machine)
+This will increase the total number of nodes in the cluster to 3 (one instance of `paintchat`, and two instances of `paintchat-replicant`) -->
+
+### Connect to the PaintChat cluster
+
+Point your browser to [http://localhost:8080](http://localhost:8080)
+
+_tip: open in multiple tabs for realtime collaborative drawing_
