@@ -1,0 +1,33 @@
+version: '3'
+
+services:
+
+  paintchat:
+    build: .
+    ports:
+      - "8080"
+    depends_on:
+      - cassandra
+
+  paintchat-replicant:
+    build: .
+    ports:
+      - "8080"
+    environment:
+      EXTERNAL_HOSTNAME: paintchat-replicant
+    depends_on:
+      - cassandra
+      - paintchat
+
+  nginx:
+    build:
+      context:  ./nginx
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - paintchat
+      - paintchat-replicant
+
+  cassandra:
+    image: cassandra
