@@ -6,7 +6,7 @@ import akka.util.Timeout
 import akka.pattern.ask
 import akka.cluster.{Cluster, Member, ClusterEvent}
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
-import spray.can.server.UHttp
+import org.apache.commons.lang3.StringEscapeUtils
 import spray.can.websocket.{WebSocketServerWorker, UpgradedToWebSocket, FrameCommandFailed}
 import spray.can.websocket.frame.TextFrame
 import spray.routing.HttpServiceActor
@@ -75,7 +75,7 @@ class ClientWorker(val serverConnection:ActorRef, val bufferproxy:ActorRef, val 
   def handleTextFrame(frame: TextFrame) = {
     frame.payload.utf8String.split(":",2).toList match {
       case "PAINT"::data::_ => mediator ! Publish("canvas_update", Paint(data))
-      case "CHAT"::message::_ => mediator ! Publish("client_update", Chat(name,message,self))
+      case "CHAT"::message::_ => mediator ! Publish("client_update", Chat(name,StringEscapeUtils.escapeHtml4(message),self))
       case "RESET"::_ => mediator ! Publish("canvas_update", Reset(name, self))
       case "USERNAME"::username::_ => context.parent ! UserName(username)
       case "GETBUFFER"::_ => context.parent ! GetBuffer

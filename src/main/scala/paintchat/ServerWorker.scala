@@ -2,16 +2,12 @@ package paintchat
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Terminated}
 import akka.io.Tcp.ConnectionClosed
-import akka.pattern.ask
-import akka.util.Timeout
 import akka.cluster.pubsub.DistributedPubSub
-import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe, SubscribeAck}
+import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
 import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import spray.can.Http
 import spray.can.websocket.UpgradedToWebSocket
 import collection.mutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 case object ServerStatus
 case class  ServerState(connections: Int)
