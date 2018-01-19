@@ -3,9 +3,6 @@ MAINTAINER Kevin Chabreck
 
 # PaintChat image based on Oracle Java 8 and SBT 0.13.9
 
-# expose clustering port
-EXPOSE 2551
-
 # get required sbt version
 COPY project/build.properties project/build.properties
 RUN sbt update
