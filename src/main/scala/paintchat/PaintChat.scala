@@ -14,38 +14,22 @@ import scala.concurrent.duration._
 object PaintChat extends App with MySslConfiguration {
 
   val config = ConfigFactory.load()
-  val default_interface = config.getString("app.interface")
-  val default_http_port = config.getInt("app.port")
-  val default_tcp_port  = config.getInt("akka.remote.netty.tcp.port")
 
-  def bindTCPPort(port:Int): ActorSystem = {
-    try {
-      ActorSystem("ClusterSystem", ConfigFactory.parseString("akka.remote.netty.tcp.port="+port).withFallback(ConfigFactory.load()))
-    } catch {
-      case scala.util.control.NonFatal(_) =>
-        if (port==default_tcp_port)
-          bindTCPPort(0)
-        else
-          ActorSystem("ClusterSystem")
-    }
-  }
-
-  def bindHTTPPort(server:ActorRef, port:Int): Unit = {
-    implicit val timeout = Timeout(5 seconds)
-    val bind_future = ask(IO(UHttp), Http.Bind(server, default_interface, port))
-    val bind_result = Await.result(bind_future, timeout.duration)
-    bind_result match {
-      case Http.Bound(x) => println(Console.GREEN+s"server listening on http:/$x"+Console.RESET)
-      case _: Http.CommandFailed => println(Console.RED+"Error: http bind failed"+Console.RESET)
-    }
-  }
-
-  implicit val system = bindTCPPort(default_tcp_port)
+  // join cluster
+  implicit val system = ActorSystem("ClusterSystem")
   system.actorOf(Props(classOf[ClusterListener]), "paintchat-cluster")
   system.actorOf(ClusterSingletonManager.props(singletonProps = Props(classOf[BufferManager]),
                                                terminationMessage = PoisonPill,
                                                settings = ClusterSingletonManagerSettings(system)),
                  name = "buffer-manager")
-  bindHTTPPort(system.actorOf(Props(classOf[ServerWorker]), "paintchat-server"), default_http_port)
+
+  // bind to http port
+  implicit val timeout = Timeout(5 seconds)
+  val bind_future = IO(UHttp) ? Http.Bind(system.actorOf(Props(classOf[ServerWorker]), "paintchat-server"), config.getString("app.interface"), config.getInt("app.port"))
+  Await.result(bind_future, timeout.duration) match {
+    case Http.Bound(x) => println(Console.GREEN+s"server listening on http:/$x"+Console.RESET)
+    case _: Http.CommandFailed => println(Console.RED+"Error: http bind failed"+Console.RESET)
+  }
+
   Await.result(system.whenTerminated, Duration.Inf)
 }
