@@ -22,7 +22,6 @@ services:
   nginx:
     build:
       context:  ./nginx
-      dockerfile: Dockerfile
     ports:
       - "8080:8080"
     depends_on:
@@ -31,3 +30,8 @@ services:
 
   cassandra:
     image: cassandra
+    volumes:
+      - cassandra.data:/var/lib/cassandra
+
+volumes:
+  cassandra.data:

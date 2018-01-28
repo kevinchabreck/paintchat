@@ -7,7 +7,7 @@ MAINTAINER Kevin Chabreck
 COPY project/build.properties project/build.properties
 RUN sbt update
 
-# build compiler-interface for scala 11.8
+# build compiler-interface for scala 12.4
 RUN echo 'scalaVersion := "2.12.4"' > build.sbt && \
     mkdir -p src/main/scala && \
     touch src/main/scala/tmp.scala && \

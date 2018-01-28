@@ -54,7 +54,7 @@ class ClientWorker(val serverWorker:ActorRef, val bufferproxy:ActorRef, val medi
     case Accepted(username) =>
       send(s"ACCEPTED:$username")
       name = username
-    case x => log.warning(s"recieved unknown message: $x")
+    case x => log.warning(s"received unknown message: $x")
   }
 
   def handleIncomingMessage(text:String) = {

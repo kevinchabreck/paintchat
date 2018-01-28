@@ -42,7 +42,7 @@ object PaintChat extends App {
       }.to(Sink.actorRef[ClientWorker.IncomingMessage](userActor, PoisonPill))
 
     val outgoingMessages: Source[Message, _] =
-      Source.actorRef[ClientWorker.OutgoingMessage](10, OverflowStrategy.fail)
+      Source.actorRef[ClientWorker.OutgoingMessage](100, OverflowStrategy.dropHead)
         .mapMaterializedValue { outActor =>
           userActor ! ClientWorker.Connected(outActor)
         }.map((outMsg: ClientWorker.OutgoingMessage) => TextMessage(outMsg.text))
