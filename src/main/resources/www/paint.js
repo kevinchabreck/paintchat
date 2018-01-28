@@ -439,7 +439,7 @@ function init(container, width, height) {
     'ERROR': servererror
   }
 
-  var wsuri = window.location.href.replace("http", "ws");
+  var wsuri = window.location.href.replace("http", "ws")+"ws";
   console.log("wsuri: "+wsuri)
 
   // open websocket

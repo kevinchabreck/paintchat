@@ -1,16 +1,13 @@
 package paintchat
 
-import akka.actor.{Actor, ActorRef, ActorLogging, Terminated}
-import akka.io.Tcp.ConnectionClosed
-import akka.cluster.pubsub.DistributedPubSub
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
-import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
-import spray.can.Http
-import spray.can.websocket.UpgradedToWebSocket
+import akka.io.Tcp.ConnectionClosed
 import collection.mutable
 
 case object ServerStatus
 case class  ServerState(connections: Int)
+case object Connected
 
 sealed trait ServerUpdate
 case class PaintBuffer(buffer:mutable.ListBuffer[String]) extends ServerUpdate
@@ -20,27 +17,22 @@ case class UserLeft(username:String) extends ServerUpdate
 case class UserList(userlist:Iterable[String]) extends ServerUpdate
 case class UserCount(usercount:Int) extends ServerUpdate
 
-class ServerWorker extends Actor with ActorLogging {
+object ServerWorker {
+  def props(bufferproxy:ActorRef, mediator:ActorRef) = Props(classOf[ServerWorker], bufferproxy, mediator)
+}
+class ServerWorker (val bufferproxy:ActorRef, val mediator:ActorRef) extends Actor with ActorLogging {
   val clients = new mutable.HashMap[ActorRef, String]
   var pbuffer = new mutable.ListBuffer[String]
   val userlist = new mutable.ListBuffer[String]
   var buffervalid = false
 
-  val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("client_update", self)
   mediator ! Subscribe("canvas_update", self)
   mediator ! Subscribe("buffer_update", self)
 
-  var bufferproxy = context.actorOf(ClusterSingletonProxy.props(
-    singletonManagerPath = "/user/buffer-manager",
-    settings = ClusterSingletonProxySettings(context.system)),
-    name = "buffer-proxy"
-  )
-
   def broadcast(m:Any) = clients.keys.foreach(_ ! m)
 
   def receive = {
-    case UpgradedToWebSocket => clients(sender) = ""
     case ServerStatus => sender ! ServerState(clients.size)
     case c:Chat => broadcast(c)
     case GetUserList => sender ! UserList(userlist)
@@ -54,9 +46,9 @@ class ServerWorker extends Actor with ActorLogging {
       pbuffer.clear()
       buffervalid = true
 
-    case Http.Connected(remoteAddress, localAddress) =>
-      val connection = context.watch(context.actorOf(ClientWorker.props(sender, bufferproxy, mediator)))
-      sender ! Http.Register(connection)
+    case Connected =>
+      clients(sender) = ""
+      context.watch(sender())
 
     case _:ConnectionClosed | _:Terminated =>
       mediator ! Publish("client_update", UserLeft(clients(sender)))

@@ -1,35 +1,65 @@
 package paintchat
 
-import akka.actor.{ActorRef, ActorSystem, PoisonPill, Props}
-import akka.io.IO
-import akka.util.Timeout
-import akka.pattern.ask
-import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings}
+import akka.actor.{ActorSystem, PoisonPill, Props}
+import akka.cluster.pubsub.DistributedPubSub
+import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerSettings, ClusterSingletonProxy, ClusterSingletonProxySettings}
+import akka.http.scaladsl.Http
+import akka.http.scaladsl.model.ws.{Message, TextMessage}
+import akka.http.scaladsl.server.Directives._
+import akka.stream.{ActorMaterializer, OverflowStrategy}
+import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
-import spray.can.Http
-import spray.can.server.UHttp
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-object PaintChat extends App with MySslConfiguration {
+object PaintChat extends App {
 
   val config = ConfigFactory.load()
 
   // join cluster
   implicit val system = ActorSystem("ClusterSystem")
   system.actorOf(Props(classOf[ClusterListener]), "paintchat-cluster")
-  system.actorOf(ClusterSingletonManager.props(singletonProps = Props(classOf[BufferManager]),
-                                               terminationMessage = PoisonPill,
-                                               settings = ClusterSingletonManagerSettings(system)),
-                 name = "buffer-manager")
+  system.actorOf(ClusterSingletonManager.props(
+    singletonProps = Props(classOf[BufferManager]),
+    terminationMessage = PoisonPill,
+    settings = ClusterSingletonManagerSettings(system)),
+    name = "buffer-manager")
+  implicit val materializer = ActorMaterializer()
+  var bufferproxy = system.actorOf(ClusterSingletonProxy.props(
+    singletonManagerPath = "/user/buffer-manager",
+    settings = ClusterSingletonProxySettings(system)),
+    name = "buffer-proxy")
+  val mediator = DistributedPubSub(system).mediator
+  val serverWorker = system.actorOf(ServerWorker.props(bufferproxy, mediator), "paintchat-server")
 
-  // bind to http port
-  implicit val timeout = Timeout(5 seconds)
-  val bind_future = IO(UHttp) ? Http.Bind(system.actorOf(Props(classOf[ServerWorker]), "paintchat-server"), config.getString("app.interface"), config.getInt("app.port"))
-  Await.result(bind_future, timeout.duration) match {
-    case Http.Bound(x) => println(Console.GREEN+s"server listening on http:/$x"+Console.RESET)
-    case _: Http.CommandFailed => println(Console.RED+"Error: http bind failed"+Console.RESET)
+  def newUser(): Flow[Message, Message, _] = {
+    val userActor = system.actorOf(Props(new ClientWorker(serverWorker, bufferproxy, mediator)))
+
+    val incomingMessages: Sink[Message, _] =
+      Flow[Message].map {
+        case TextMessage.Strict(text) => ClientWorker.IncomingMessage(text)
+      }.to(Sink.actorRef[ClientWorker.IncomingMessage](userActor, PoisonPill))
+
+    val outgoingMessages: Source[Message, _] =
+      Source.actorRef[ClientWorker.OutgoingMessage](10, OverflowStrategy.fail)
+        .mapMaterializedValue { outActor =>
+          userActor ! ClientWorker.Connected(outActor)
+        }.map((outMsg: ClientWorker.OutgoingMessage) => TextMessage(outMsg.text))
+
+    Flow.fromSinkAndSource(incomingMessages, outgoingMessages)
   }
+
+  val route =
+    pathEndOrSingleSlash {
+      getFromResource("www/index.html")
+    } ~ path("ws") {
+      handleWebSocketMessages(newUser())
+    } ~ path("health") {
+      complete("{status: up}")
+    } ~ getFromResourceDirectory("www")
+
+  val binding = Await.result(Http().bindAndHandle(route, "0.0.0.0", 8080), 3.seconds)
 
   Await.result(system.whenTerminated, Duration.Inf)
 }

@@ -8,7 +8,7 @@ COPY project/build.properties project/build.properties
 RUN sbt update
 
 # build compiler-interface for scala 11.8
-RUN echo 'scalaVersion := "2.11.8"' > build.sbt && \
+RUN echo 'scalaVersion := "2.12.4"' > build.sbt && \
     mkdir -p src/main/scala && \
     touch src/main/scala/tmp.scala && \
     sbt compile && \

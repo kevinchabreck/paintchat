@@ -3,7 +3,7 @@ name := "PaintChat"
 
 version := "2.0"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.4"
 
 scalacOptions ++= Seq(
   "-deprecation",
@@ -13,17 +13,16 @@ scalacOptions ++= Seq(
 
 resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
 
-val akkaVersion = "2.4.1"
+val akkaVersion = "2.5.9"
 
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-cluster" % akkaVersion,
   "com.typesafe.akka" %% "akka-cluster-tools" % akkaVersion,
-  "com.typesafe.akka" % "akka-cluster-metrics_2.11" % akkaVersion,
   "com.typesafe.akka" %% "akka-persistence" % akkaVersion,
+  "com.typesafe.akka" %% "akka-http"   % "10.1.0-RC1",
+  "com.typesafe.akka" %% "akka-stream" % akkaVersion,
+  "com.typesafe.akka" %% "akka-persistence-cassandra" % "0.80",
   "org.apache.commons" % "commons-lang3" % "3.7",
-  "com.github.krasserm" %% "akka-persistence-cassandra3" % "0.5",
   "org.slf4j" % "slf4j-simple" % "1.6.4",
-  "io.spray" %% "spray-can" % "1.3.3",
-  "com.wandoulabs.akka" %% "spray-websocket" % "0.1.4",
-  "com.typesafe.play" %% "play-json" % "2.4.4"
+  "com.typesafe.play" %% "play-json" % "2.6.8"
 )
