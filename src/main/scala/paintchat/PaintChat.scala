@@ -6,6 +6,8 @@ import akka.cluster.singleton.{ClusterSingletonManager, ClusterSingletonManagerS
 import akka.http.scaladsl.Http
 import akka.http.scaladsl.model.ws.{Message, TextMessage}
 import akka.http.scaladsl.server.Directives._
+import akka.management.AkkaManagement
+import akka.management.cluster.bootstrap.ClusterBootstrap
 import akka.stream.{ActorMaterializer, OverflowStrategy}
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
@@ -19,6 +21,8 @@ object PaintChat extends App {
 
   // join cluster
   implicit val system = ActorSystem("ClusterSystem")
+  AkkaManagement(system).start()
+  ClusterBootstrap(system).start()
   system.actorOf(Props(classOf[ClusterListener]), "paintchat-cluster")
   system.actorOf(ClusterSingletonManager.props(
     singletonProps = Props(classOf[BufferManager]),

@@ -6,27 +6,15 @@ services:
     build: .
     ports:
       - "8080"
-    environment:
-      EXTERNAL_HOSTNAME: paintchat
     depends_on:
       - cassandra
-
-  paintchat-replicant:
-    build: .
-    ports:
-      - "8080"
-    depends_on:
-      - cassandra
-      - paintchat
 
   nginx:
-    build:
-      context:  ./nginx
+    build: ./nginx
     ports:
       - "8080:8080"
     depends_on:
       - paintchat
-      - paintchat-replicant
 
   cassandra:
     image: cassandra
