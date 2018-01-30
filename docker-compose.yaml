@@ -6,15 +6,22 @@ services:
     build: .
     ports:
       - "8080"
+    labels:
+      - "traefik.backend=paintchat"
+      - "traefik.frontend.rule=Host:paintchat.localhost"
+      - "traefik.port=8080"
     depends_on:
       - cassandra
 
-  nginx:
-    build: ./nginx
+  traefik:
+    image: traefik
+    command: --api --docker --docker.domain=localhost --logLevel=INFO
     ports:
-      - "8080:8080"
-    depends_on:
-      - paintchat
+      - "8080:80"
+      - "8081:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /dev/null:/traefik.toml
 
   cassandra:
     image: cassandra
