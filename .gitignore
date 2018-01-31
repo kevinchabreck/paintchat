@@ -1,10 +1,5 @@
 # sbt
 target/
 
-# private scripts
-launchcontainer.sh
-start-cassandra.sh
-getstatus.sh
-
 # testing data
 akka/benchmarks/results/
