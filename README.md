@@ -1,6 +1,5 @@
 # PaintChat
-
-[![Build Status](https://travis-ci.org/kevinchabreck/paintchat.svg?branch=master)](https://travis-ci.org/kevinchabreck/paintchat) [![Join the chat at https://gitter.im/kevinchabreck/paintchat](https://badges.gitter.im/kevinchabreck/paintchat.svg)](https://gitter.im/kevinchabreck/paintchat?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Build Status](https://travis-ci.org/kevinchabreck/paintchat.svg?branch=master)](https://travis-ci.org/kevinchabreck/paintchat) [![Join the chat at https://gitter.im/kevinchabreck/paintchat](https://badges.gitter.im/kevinchabreck/paintchat.svg)](https://gitter.im/kevinchabreck/paintchat?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![AUR](https://img.shields.io/aur/license/yaourt.svg)](https://github.com/kevinchabreck/paintchat/blob/master/LICENSE)
 
 A distributed chatroom with support for real-time collaborative drawing. Think MS Paint meets Google Docs!
 
