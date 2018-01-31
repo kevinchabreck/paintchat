@@ -11,6 +11,7 @@ A distributed chatroom with support for real-time collaborative drawing. Think M
 -  run as a single instance or as multiple clustered nodes
 -  consistent, persistant state
 -  dynamically add/remove nodes at any time
+-  out of the box service discovery and load balancing with zero configuration
 
 ![paintchat screenshot](paintchat.png)
 
@@ -51,4 +52,4 @@ You can reduce the cluster size in the same way:
 
 This will reduce the number of `paintchat` instances in the cluster to 1.
 
-_note: traefik will automatically detect changes to the topology of the system and dynamically adjust its list of upstream hosts - no configuration required!_
+_note: traefik will detect changes to the topology of the system and adjust its list of upstream hosts automatically - no configuration required!_
