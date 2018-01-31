@@ -10,12 +10,13 @@ services:
       - "traefik.backend=paintchat"
       - "traefik.frontend.rule=Host:paintchat.localhost"
       - "traefik.port=8080"
+      - "traefik.enable=true"
     depends_on:
       - cassandra
 
   traefik:
     image: traefik
-    command: --api --docker --docker.domain=localhost --logLevel=INFO
+    command: --api --docker --docker.domain=localhost --docker.exposedbydefault=false --logLevel=INFO
     ports:
       - "8080:80"
       - "8081:8080"
