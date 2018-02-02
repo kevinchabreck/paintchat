@@ -5,6 +5,8 @@ A distributed chatroom with support for real-time collaborative drawing. Think M
 
 [Live demo](http://draw.ws)
 
+[Read the whitepaper](paintchat.pdf)
+
 ## Features
 
 -  run as a single instance or as multiple clustered nodes
