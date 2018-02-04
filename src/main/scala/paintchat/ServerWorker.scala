@@ -1,7 +1,9 @@
 package paintchat
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
+import akka.actor.{Actor, ActorLogging, ActorRef, Terminated}
+import akka.cluster.pubsub.DistributedPubSub
 import akka.cluster.pubsub.DistributedPubSubMediator.{Publish, Subscribe}
+import akka.cluster.singleton.{ClusterSingletonProxy, ClusterSingletonProxySettings}
 import akka.io.Tcp.ConnectionClosed
 import collection.mutable
 
@@ -17,15 +19,18 @@ case class UserLeft(username:String) extends ServerUpdate
 case class UserList(userlist:Iterable[String]) extends ServerUpdate
 case class UserCount(usercount:Int) extends ServerUpdate
 
-object ServerWorker {
-  def props(bufferproxy:ActorRef, mediator:ActorRef) = Props(classOf[ServerWorker], bufferproxy, mediator)
-}
-class ServerWorker (val bufferproxy:ActorRef, val mediator:ActorRef) extends Actor with ActorLogging {
+class ServerWorker extends Actor with ActorLogging {
   val clients = new mutable.HashMap[ActorRef, String]
   var pbuffer = new mutable.ListBuffer[String]
   val userlist = new mutable.ListBuffer[String]
   var buffervalid = false
 
+  var bufferproxy = context.actorOf(ClusterSingletonProxy.props(
+    singletonManagerPath = "/user/buffer-manager",
+    settings = ClusterSingletonProxySettings(context.system)),
+    name = "buffer-proxy")
+
+  val mediator = DistributedPubSub(context.system).mediator
   mediator ! Subscribe("client_update", self)
   mediator ! Subscribe("canvas_update", self)
   mediator ! Subscribe("buffer_update", self)

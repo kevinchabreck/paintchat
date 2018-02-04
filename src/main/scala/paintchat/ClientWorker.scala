@@ -1,10 +1,11 @@
 package paintchat
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.cluster.pubsub.DistributedPubSub
 import akka.io.Tcp.ConnectionClosed
 import akka.cluster.{Cluster, ClusterEvent}
 import akka.cluster.pubsub.DistributedPubSubMediator.Publish
-import org.apache.commons.lang3.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils
 import play.api.libs.json.Json
 
 sealed trait ClientUpdate
@@ -19,12 +20,13 @@ object ClientWorker {
   case class Connected(outgoing:ActorRef)
   case class IncomingMessage(text:String)
   case class OutgoingMessage(text:String)
-  def props(serverWorker:ActorRef, bufferproxy:ActorRef, mediator:ActorRef) = Props(classOf[ClientWorker], serverWorker, bufferproxy, mediator)
+  def props(serverWorker:ActorRef) = Props(classOf[ClientWorker], serverWorker)
 }
-class ClientWorker(val serverWorker:ActorRef, val bufferproxy:ActorRef, val mediator:ActorRef) extends Actor with ActorLogging {
+class ClientWorker(val serverWorker:ActorRef) extends Actor with ActorLogging {
 
   var name = "anonymous"
   var client:ActorRef = null
+  val mediator = DistributedPubSub(context.system).mediator
 
   Cluster(context.system).subscribe(self, classOf[ClusterEvent.ClusterDomainEvent])
 
@@ -50,7 +52,7 @@ class ClientWorker(val serverWorker:ActorRef, val bufferproxy:ActorRef, val medi
     case UserLeft(username) => send(s"INFO:$username has left")
     case PaintBuffer(pbuffer) => send(s"PAINTBUFFER:${Json.toJson(pbuffer)}")
     case UserList(userlist) => send(s"USERLIST:" + userlist.mkString(" "))
-    case UserCount(usercount) => send(s"USERCOUNT:${usercount}")
+    case UserCount(usercount) => send(s"USERCOUNT:$usercount")
     case Accepted(username) =>
       send(s"ACCEPTED:$username")
       name = username
